@@ -33,5 +33,75 @@ public class Job {
     public Job() {
     }
 
-    // Getters and Setters will be added next
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public JobType getType() {
+        return type;
+    }
+
+    public void setType(JobType type) {
+        this.type = type;
+    }
+
+    public JobStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(JobStatus status) {
+        this.status = status;
+    }
+
+    public LocalDateTime getScheduledAt() {
+        return scheduledAt;
+    }
+
+    public void setScheduledAt(LocalDateTime scheduledAt) {
+        this.scheduledAt = scheduledAt;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public Integer getRetryCount() {
+        return retryCount;
+    }
+
+    public void setRetryCount(Integer retryCount) {
+        this.retryCount = retryCount;
+    }
+
+    public String getPayload() {
+        return payload;
+    }
+
+    public void setPayload(String payload) {
+        this.payload = payload;
+    }
 }
