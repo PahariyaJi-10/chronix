@@ -5,6 +5,8 @@ import com.divyansh.chronix.dto.JobResponse;
 import com.divyansh.chronix.service.JobService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/jobs")
 public class JobController {
@@ -15,8 +17,15 @@ public class JobController {
         this.jobService = jobService;
     }
 
+    // Create Job
     @PostMapping
     public JobResponse createJob(@RequestBody CreateJobRequest request) {
         return jobService.createJob(request);
+    }
+
+    // Get All Jobs
+    @GetMapping
+    public List<JobResponse> getAllJobs() {
+        return jobService.getAllJobs();
     }
 }

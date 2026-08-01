@@ -8,6 +8,8 @@ import com.divyansh.chronix.repository.JobRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class JobService {
@@ -18,15 +20,8 @@ public class JobService {
         this.jobRepository = jobRepository;
     }
 
+    // Create Job
     public JobResponse createJob(CreateJobRequest request) {
-
-        // Debug logs
-        System.out.println("===== REQUEST RECEIVED =====");
-        System.out.println("Name: " + request.getName());
-        System.out.println("Type: " + request.getType());
-        System.out.println("ScheduledAt: " + request.getScheduledAt());
-        System.out.println("Payload: " + request.getPayload());
-        System.out.println("============================");
 
         Job job = new Job();
 
@@ -49,5 +44,19 @@ public class JobService {
                 savedJob.getType(),
                 savedJob.getStatus()
         );
+    }
+
+    // Get All Jobs
+    public List<JobResponse> getAllJobs() {
+
+        return jobRepository.findAll()
+                .stream()
+                .map(job -> new JobResponse(
+                        job.getId(),
+                        job.getName(),
+                        job.getType(),
+                        job.getStatus()
+                ))
+                .collect(Collectors.toList());
     }
 }
