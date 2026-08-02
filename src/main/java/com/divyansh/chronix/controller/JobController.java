@@ -28,4 +28,10 @@ public class JobController {
     public List<JobResponse> getAllJobs() {
         return jobService.getAllJobs();
     }
+
+    // Get Job By ID
+    @GetMapping("/{id}")
+    public JobResponse getJobById(@PathVariable Long id) {
+        return jobService.getJobById(id);
+    }
 }

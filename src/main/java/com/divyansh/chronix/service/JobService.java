@@ -59,4 +59,19 @@ public class JobService {
                 ))
                 .collect(Collectors.toList());
     }
+
+    // Get Job By ID
+    public JobResponse getJobById(Long id) {
+
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Job not found with id: " + id));
+
+        return new JobResponse(
+                job.getId(),
+                job.getName(),
+                job.getType(),
+                job.getStatus()
+        );
+    }
 }
