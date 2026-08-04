@@ -74,4 +74,26 @@ public class JobService {
                 job.getStatus()
         );
     }
+    // Update Job
+public JobResponse updateJob(Long id, CreateJobRequest request) {
+
+    Job job = jobRepository.findById(id)
+            .orElseThrow(() ->
+                    new RuntimeException("Job not found with id: " + id));
+
+    job.setName(request.getName());
+    job.setType(request.getType());
+    job.setScheduledAt(request.getScheduledAt());
+    job.setPayload(request.getPayload());
+    job.setUpdatedAt(LocalDateTime.now());
+
+    Job updatedJob = jobRepository.save(job);
+
+    return new JobResponse(
+            updatedJob.getId(),
+            updatedJob.getName(),
+            updatedJob.getType(),
+            updatedJob.getStatus()
+    );
+}
 }

@@ -34,4 +34,12 @@ public class JobController {
     public JobResponse getJobById(@PathVariable Long id) {
         return jobService.getJobById(id);
     }
+    // Update Job
+@PutMapping("/{id}")
+public JobResponse updateJob(
+        @PathVariable Long id,
+        @RequestBody CreateJobRequest request) {
+
+    return jobService.updateJob(id, request);
+}
 }
