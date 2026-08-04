@@ -96,4 +96,13 @@ public JobResponse updateJob(Long id, CreateJobRequest request) {
             updatedJob.getStatus()
     );
 }
+// Delete Job
+public void deleteJob(Long id) {
+
+    Job job = jobRepository.findById(id)
+            .orElseThrow(() ->
+                    new RuntimeException("Job not found with id: " + id));
+
+    jobRepository.delete(job);
+}
 }

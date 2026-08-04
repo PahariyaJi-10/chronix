@@ -42,4 +42,12 @@ public JobResponse updateJob(
 
     return jobService.updateJob(id, request);
 }
+// Delete Job
+@DeleteMapping("/{id}")
+public String deleteJob(@PathVariable Long id) {
+
+    jobService.deleteJob(id);
+
+    return "Job deleted successfully.";
+}
 }
