@@ -6,7 +6,7 @@ import com.divyansh.chronix.service.JobService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-
+import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/api/jobs")
 public class JobController {
@@ -19,7 +19,7 @@ public class JobController {
 
     // Create Job
     @PostMapping
-    public JobResponse createJob(@RequestBody CreateJobRequest request) {
+public JobResponse createJob(@Valid @RequestBody CreateJobRequest request){
         return jobService.createJob(request);
     }
 
@@ -38,7 +38,7 @@ public class JobController {
 @PutMapping("/{id}")
 public JobResponse updateJob(
         @PathVariable Long id,
-        @RequestBody CreateJobRequest request) {
+        @Valid @RequestBody CreateJobRequest request) {
 
     return jobService.updateJob(id, request);
 }
