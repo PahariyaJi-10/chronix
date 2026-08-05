@@ -4,6 +4,7 @@ import com.divyansh.chronix.dto.CreateJobRequest;
 import com.divyansh.chronix.dto.JobResponse;
 import com.divyansh.chronix.entity.Job;
 import com.divyansh.chronix.entity.JobStatus;
+import com.divyansh.chronix.exception.JobNotFoundException;
 import com.divyansh.chronix.repository.JobRepository;
 import org.springframework.stereotype.Service;
 
@@ -65,7 +66,7 @@ public class JobService {
 
         Job job = jobRepository.findById(id)
                 .orElseThrow(() ->
-                        new RuntimeException("Job not found with id: " + id));
+                        new JobNotFoundException("Job not found with id: " + id));
 
         return new JobResponse(
                 job.getId(),
@@ -74,35 +75,37 @@ public class JobService {
                 job.getStatus()
         );
     }
+
     // Update Job
-public JobResponse updateJob(Long id, CreateJobRequest request) {
+    public JobResponse updateJob(Long id, CreateJobRequest request) {
 
-    Job job = jobRepository.findById(id)
-            .orElseThrow(() ->
-                    new RuntimeException("Job not found with id: " + id));
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() ->
+                        new JobNotFoundException("Job not found with id: " + id));
 
-    job.setName(request.getName());
-    job.setType(request.getType());
-    job.setScheduledAt(request.getScheduledAt());
-    job.setPayload(request.getPayload());
-    job.setUpdatedAt(LocalDateTime.now());
+        job.setName(request.getName());
+        job.setType(request.getType());
+        job.setScheduledAt(request.getScheduledAt());
+        job.setPayload(request.getPayload());
+        job.setUpdatedAt(LocalDateTime.now());
 
-    Job updatedJob = jobRepository.save(job);
+        Job updatedJob = jobRepository.save(job);
 
-    return new JobResponse(
-            updatedJob.getId(),
-            updatedJob.getName(),
-            updatedJob.getType(),
-            updatedJob.getStatus()
-    );
-}
-// Delete Job
-public void deleteJob(Long id) {
+        return new JobResponse(
+                updatedJob.getId(),
+                updatedJob.getName(),
+                updatedJob.getType(),
+                updatedJob.getStatus()
+        );
+    }
 
-    Job job = jobRepository.findById(id)
-            .orElseThrow(() ->
-                    new RuntimeException("Job not found with id: " + id));
+    // Delete Job
+    public void deleteJob(Long id) {
 
-    jobRepository.delete(job);
-}
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() ->
+                        new JobNotFoundException("Job not found with id: " + id));
+
+        jobRepository.delete(job);
+    }
 }
