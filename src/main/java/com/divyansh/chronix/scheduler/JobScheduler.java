@@ -11,7 +11,7 @@ import java.util.List;
 
 @Component
 public class JobScheduler {
-
+private static final int MAX_RETRY = 3;
     private final JobRepository jobRepository;
 
     public JobScheduler(JobRepository jobRepository) {
@@ -39,16 +39,39 @@ public class JobScheduler {
             job.setStatus(JobStatus.RUNNING);
             jobRepository.save(job);
 
-            try {
+           try {
 
-                Thread.sleep(2000);
+    Thread.sleep(2000);
 
-                job.setStatus(JobStatus.COMPLETED);
+    // Simulate failure if payload contains "FAIL"
+    if (job.getPayload() != null &&
+            job.getPayload().equalsIgnoreCase("FAIL")) {
 
-            } catch (Exception e) {
+        throw new RuntimeException("Simulated job failure");
+    }
 
-                job.setStatus(JobStatus.FAILED);
-            }
+    job.setStatus(JobStatus.COMPLETED);
+
+    System.out.println("Job completed successfully.");
+
+} catch (Exception e) {
+
+    int retries = job.getRetryCount() + 1;
+    job.setRetryCount(retries);
+
+    if (retries < MAX_RETRY) {
+
+        job.setStatus(JobStatus.PENDING);
+
+        System.out.println("Retry " + retries + " scheduled.");
+
+    } else {
+
+        job.setStatus(JobStatus.FAILED);
+
+        System.out.println("Job permanently failed.");
+    }
+}
 
             job.setUpdatedAt(LocalDateTime.now());
 
