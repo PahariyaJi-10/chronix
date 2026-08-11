@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
 @Service
 public class JobExecutor {
 
+    private static final int MAX_RETRIES = 3;
+
     private final JobRepository jobRepository;
     private final JobExecutionRepository jobExecutionRepository;
 
@@ -34,10 +36,7 @@ public class JobExecutor {
         execution.setStartedAt(LocalDateTime.now());
         execution.setAttemptNumber(job.getRetryCount() + 1);
 
-        job.setStatus(JobStatus.RUNNING);
-        job.setUpdatedAt(LocalDateTime.now());
-
-        jobRepository.save(job);
+        // Job is already RUNNING because the scheduler claimed it.
         jobExecutionRepository.save(execution);
 
         System.out.println(
@@ -52,13 +51,15 @@ public class JobExecutor {
             Thread.sleep(5000);
 
             // Simulate failure
-            if (job.getPayload() != null &&
-                    job.getPayload().equalsIgnoreCase("FAIL")) {
+            if (job.getPayload() != null
+                    && job.getPayload().equalsIgnoreCase("FAIL")) {
 
                 throw new RuntimeException("Simulated job failure");
             }
 
+            // Job completed successfully
             job.setStatus(JobStatus.COMPLETED);
+
             execution.setStatus(JobStatus.COMPLETED);
 
             System.out.println(
@@ -68,26 +69,31 @@ public class JobExecutor {
         } catch (Exception e) {
 
             int retries = job.getRetryCount() + 1;
+
             job.setRetryCount(retries);
 
             execution.setStatus(JobStatus.FAILED);
             execution.setErrorMessage(e.getMessage());
 
-            if (retries < 3) {
+            if (retries < MAX_RETRIES) {
 
+                // Allow scheduler to pick it up again
                 job.setStatus(JobStatus.PENDING);
 
                 System.out.println(
-                        "Retry " + retries +
-                        " scheduled for: " + job.getName()
+                        "Retry " + retries
+                                + " scheduled for: "
+                                + job.getName()
                 );
 
             } else {
 
+                // Maximum retries reached
                 job.setStatus(JobStatus.FAILED);
 
                 System.out.println(
-                        "Job permanently failed: " + job.getName()
+                        "Job permanently failed: "
+                                + job.getName()
                 );
             }
 
