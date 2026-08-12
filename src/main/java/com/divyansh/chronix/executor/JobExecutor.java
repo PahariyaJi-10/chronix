@@ -26,8 +26,9 @@ public class JobExecutor {
         this.jobExecutionRepository = jobExecutionRepository;
     }
 
-    @Async
-    public void execute(Job job) {
+@Async("chronixTaskExecutor")
+public void execute(Job job)  {
+
 
         JobExecution execution = new JobExecution();
 
