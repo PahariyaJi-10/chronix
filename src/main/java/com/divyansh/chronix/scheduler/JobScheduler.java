@@ -1,44 +1,64 @@
 package com.divyansh.chronix.scheduler;
 
 import com.divyansh.chronix.entity.Job;
-import com.divyansh.chronix.service.JobSchedulerService;
+import com.divyansh.chronix.entity.JobStatus;
 import com.divyansh.chronix.executor.JobExecutor;
+import com.divyansh.chronix.repository.JobRepository;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
 public class JobScheduler {
 
-    private final JobSchedulerService jobSchedulerService;
+    private final JobRepository jobRepository;
     private final JobExecutor jobExecutor;
 
     public JobScheduler(
-            JobSchedulerService jobSchedulerService,
+            JobRepository jobRepository,
             JobExecutor jobExecutor) {
-
-        this.jobSchedulerService = jobSchedulerService;
+        this.jobRepository = jobRepository;
         this.jobExecutor = jobExecutor;
     }
 
     @Scheduled(fixedRate = 10000)
-    public void scheduleJobs() {
+    @Transactional
+    public void checkScheduledJobs() {
 
-        List<Job> jobs = jobSchedulerService.claimDueJobs();
+        LocalDateTime now = LocalDateTime.now();
 
-        if (jobs.isEmpty()) {
-            System.out.println("No pending jobs found.");
-            return;
-        }
+        List<Job> jobs =
+                jobRepository.findByStatusAndScheduledAtLessThanEqual(
+                        JobStatus.PENDING,
+                        now
+                );
 
         for (Job job : jobs) {
 
-            System.out.println(
-                    "Job claimed for execution: " + job.getName()
+            int claimed = jobRepository.claimJob(
+                    job.getId(),
+                    JobStatus.PENDING,
+                    JobStatus.RUNNING,
+                    now
             );
 
-            jobExecutor.execute(job);
+            if (claimed == 1) {
+
+                System.out.println(
+                        "Scheduler claimed job: " + job.getName()
+                );
+
+                jobExecutor.execute(job);
+
+            } else {
+
+                System.out.println(
+                        "Job already claimed: " + job.getName()
+                );
+            }
         }
     }
 }

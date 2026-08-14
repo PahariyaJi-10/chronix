@@ -2,9 +2,8 @@ package com.divyansh.chronix.repository;
 
 import com.divyansh.chronix.entity.Job;
 import com.divyansh.chronix.entity.JobStatus;
-import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,16 +17,18 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             LocalDateTime scheduledAt
     );
 
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Modifying
     @Query("""
-            SELECT j
-            FROM Job j
-            WHERE j.status = :status
-            AND j.scheduledAt <= :scheduledAt
-            ORDER BY j.scheduledAt ASC
-            """)
-    List<Job> findDueJobsForUpdate(
-            @Param("status") JobStatus status,
-            @Param("scheduledAt") LocalDateTime scheduledAt
+        UPDATE Job j
+        SET j.status = :running,
+            j.updatedAt = :updatedAt
+        WHERE j.id = :id
+        AND j.status = :pending
+        """)
+    int claimJob(
+            @Param("id") Long id,
+            @Param("pending") JobStatus pending,
+            @Param("running") JobStatus running,
+            @Param("updatedAt") LocalDateTime updatedAt
     );
 }
