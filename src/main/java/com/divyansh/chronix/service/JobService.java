@@ -66,7 +66,9 @@ public class JobService {
 
         Job job = jobRepository.findById(id)
                 .orElseThrow(() ->
-                        new JobNotFoundException("Job not found with id: " + id));
+                        new JobNotFoundException(
+                                "Job not found with id: " + id
+                        ));
 
         return new JobResponse(
                 job.getId(),
@@ -77,11 +79,15 @@ public class JobService {
     }
 
     // Update Job
-    public JobResponse updateJob(Long id, CreateJobRequest request) {
+    public JobResponse updateJob(
+            Long id,
+            CreateJobRequest request) {
 
         Job job = jobRepository.findById(id)
                 .orElseThrow(() ->
-                        new JobNotFoundException("Job not found with id: " + id));
+                        new JobNotFoundException(
+                                "Job not found with id: " + id
+                        ));
 
         job.setName(request.getName());
         job.setType(request.getType());
@@ -99,12 +105,43 @@ public class JobService {
         );
     }
 
+    // Cancel Job
+    public JobResponse cancelJob(Long id) {
+
+        Job job = jobRepository.findById(id)
+                .orElseThrow(() ->
+                        new JobNotFoundException(
+                                "Job not found with id: " + id
+                        ));
+
+        // Only pending jobs can be cancelled
+        if (job.getStatus() != JobStatus.PENDING) {
+            throw new RuntimeException(
+                    "Only PENDING jobs can be cancelled"
+            );
+        }
+
+        job.setStatus(JobStatus.CANCELLED);
+        job.setUpdatedAt(LocalDateTime.now());
+
+        Job cancelledJob = jobRepository.save(job);
+
+        return new JobResponse(
+                cancelledJob.getId(),
+                cancelledJob.getName(),
+                cancelledJob.getType(),
+                cancelledJob.getStatus()
+        );
+    }
+
     // Delete Job
     public void deleteJob(Long id) {
 
         Job job = jobRepository.findById(id)
                 .orElseThrow(() ->
-                        new JobNotFoundException("Job not found with id: " + id));
+                        new JobNotFoundException(
+                                "Job not found with id: " + id
+                        ));
 
         jobRepository.delete(job);
     }
