@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/jobs")
+@RequestMapping("/api")
 public class JobExecutionController {
 
     private final JobExecutionService jobExecutionService;
@@ -17,12 +17,16 @@ public class JobExecutionController {
 
         this.jobExecutionService = jobExecutionService;
     }
-@GetMapping("/executions")
-public List<JobExecutionResponse> getAllExecutions() {
 
-    return jobExecutionService.getAllExecutions();
-}
-    @GetMapping("/{jobId}/executions")
+    // Get all execution history
+    @GetMapping("/executions")
+    public List<JobExecutionResponse> getAllExecutions() {
+
+        return jobExecutionService.getAllExecutions();
+    }
+
+    // Get execution history for a specific job
+    @GetMapping("/jobs/{jobId}/executions")
     public List<JobExecutionResponse> getJobExecutions(
             @PathVariable Long jobId) {
 
