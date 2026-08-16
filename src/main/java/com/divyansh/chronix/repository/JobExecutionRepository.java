@@ -8,5 +8,9 @@ import java.util.List;
 public interface JobExecutionRepository
         extends JpaRepository<JobExecution, Long> {
 
+    // Get executions for a specific job
     List<JobExecution> findByJobIdOrderByStartedAtDesc(Long jobId);
+
+    // Get all executions, newest first
+    List<JobExecution> findAllByOrderByStartedAtDesc();
 }

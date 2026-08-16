@@ -23,7 +23,14 @@ public class JobExecutionService {
         this.jobExecutionRepository = jobExecutionRepository;
         this.jobRepository = jobRepository;
     }
+public List<JobExecutionResponse> getAllExecutions() {
 
+    return jobExecutionRepository
+            .findAllByOrderByStartedAtDesc()
+            .stream()
+            .map(this::mapToResponse)
+            .collect(Collectors.toList());
+}
     public List<JobExecutionResponse> getExecutionsByJobId(Long jobId) {
 
         if (!jobRepository.existsById(jobId)) {

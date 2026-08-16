@@ -17,7 +17,11 @@ public class JobExecutionController {
 
         this.jobExecutionService = jobExecutionService;
     }
+@GetMapping("/executions")
+public List<JobExecutionResponse> getAllExecutions() {
 
+    return jobExecutionService.getAllExecutions();
+}
     @GetMapping("/{jobId}/executions")
     public List<JobExecutionResponse> getJobExecutions(
             @PathVariable Long jobId) {
