@@ -39,12 +39,7 @@ public class JobService {
 
         Job savedJob = jobRepository.save(job);
 
-        return new JobResponse(
-                savedJob.getId(),
-                savedJob.getName(),
-                savedJob.getType(),
-                savedJob.getStatus()
-        );
+        return toResponse(savedJob);
     }
 
     // Get All Jobs
@@ -52,30 +47,16 @@ public class JobService {
 
         return jobRepository.findAll()
                 .stream()
-                .map(job -> new JobResponse(
-                        job.getId(),
-                        job.getName(),
-                        job.getType(),
-                        job.getStatus()
-                ))
+                .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
     // Get Job By ID
     public JobResponse getJobById(Long id) {
 
-        Job job = jobRepository.findById(id)
-                .orElseThrow(() ->
-                        new JobNotFoundException(
-                                "Job not found with id: " + id
-                        ));
+        Job job = findJob(id);
 
-        return new JobResponse(
-                job.getId(),
-                job.getName(),
-                job.getType(),
-                job.getStatus()
-        );
+        return toResponse(job);
     }
 
     // Update Job
@@ -83,11 +64,7 @@ public class JobService {
             Long id,
             CreateJobRequest request) {
 
-        Job job = jobRepository.findById(id)
-                .orElseThrow(() ->
-                        new JobNotFoundException(
-                                "Job not found with id: " + id
-                        ));
+        Job job = findJob(id);
 
         job.setName(request.getName());
         job.setType(request.getType());
@@ -97,24 +74,14 @@ public class JobService {
 
         Job updatedJob = jobRepository.save(job);
 
-        return new JobResponse(
-                updatedJob.getId(),
-                updatedJob.getName(),
-                updatedJob.getType(),
-                updatedJob.getStatus()
-        );
+        return toResponse(updatedJob);
     }
 
     // Cancel Job
     public JobResponse cancelJob(Long id) {
 
-        Job job = jobRepository.findById(id)
-                .orElseThrow(() ->
-                        new JobNotFoundException(
-                                "Job not found with id: " + id
-                        ));
+        Job job = findJob(id);
 
-        // Only pending jobs can be cancelled
         if (job.getStatus() != JobStatus.PENDING) {
             throw new RuntimeException(
                     "Only PENDING jobs can be cancelled"
@@ -124,25 +91,69 @@ public class JobService {
         job.setStatus(JobStatus.CANCELLED);
         job.setUpdatedAt(LocalDateTime.now());
 
-        Job cancelledJob = jobRepository.save(job);
+        return toResponse(jobRepository.save(job));
+    }
 
-        return new JobResponse(
-                cancelledJob.getId(),
-                cancelledJob.getName(),
-                cancelledJob.getType(),
-                cancelledJob.getStatus()
-        );
+    // Pause Job
+    public JobResponse pauseJob(Long id) {
+
+        Job job = findJob(id);
+
+        if (job.getStatus() != JobStatus.PENDING) {
+            throw new RuntimeException(
+                    "Only PENDING jobs can be paused"
+            );
+        }
+
+        job.setStatus(JobStatus.PAUSED);
+        job.setUpdatedAt(LocalDateTime.now());
+
+        return toResponse(jobRepository.save(job));
+    }
+
+    // Resume Job
+    public JobResponse resumeJob(Long id) {
+
+        Job job = findJob(id);
+
+        if (job.getStatus() != JobStatus.PAUSED) {
+            throw new RuntimeException(
+                    "Only PAUSED jobs can be resumed"
+            );
+        }
+
+        job.setStatus(JobStatus.PENDING);
+        job.setUpdatedAt(LocalDateTime.now());
+
+        return toResponse(jobRepository.save(job));
     }
 
     // Delete Job
     public void deleteJob(Long id) {
 
-        Job job = jobRepository.findById(id)
+        Job job = findJob(id);
+
+        jobRepository.delete(job);
+    }
+
+    // Find Job
+    private Job findJob(Long id) {
+
+        return jobRepository.findById(id)
                 .orElseThrow(() ->
                         new JobNotFoundException(
                                 "Job not found with id: " + id
                         ));
+    }
 
-        jobRepository.delete(job);
+    // Convert Entity to Response
+    private JobResponse toResponse(Job job) {
+
+        return new JobResponse(
+                job.getId(),
+                job.getName(),
+                job.getType(),
+                job.getStatus()
+        );
     }
 }

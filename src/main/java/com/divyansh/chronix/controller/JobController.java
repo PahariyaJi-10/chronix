@@ -58,6 +58,22 @@ public class JobController {
         return jobService.cancelJob(id);
     }
 
+    // Pause Job
+    @PostMapping("/{id}/pause")
+    public JobResponse pauseJob(
+            @PathVariable Long id) {
+
+        return jobService.pauseJob(id);
+    }
+
+    // Resume Job
+    @PostMapping("/{id}/resume")
+    public JobResponse resumeJob(
+            @PathVariable Long id) {
+
+        return jobService.resumeJob(id);
+    }
+
     // Delete Job
     @DeleteMapping("/{id}")
     public String deleteJob(
