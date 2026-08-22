@@ -50,6 +50,14 @@ public class JobController {
         return jobService.updateJob(id, request);
     }
 
+    // Manual Retry Job
+    @PostMapping("/{id}/retry")
+    public JobResponse retryJob(
+            @PathVariable Long id) {
+
+        return jobService.retryJob(id);
+    }
+
     // Cancel Job
     @DeleteMapping("/{id}/cancel")
     public JobResponse cancelJob(

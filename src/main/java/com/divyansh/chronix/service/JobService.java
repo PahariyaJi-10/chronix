@@ -128,6 +128,24 @@ public class JobService {
         return toResponse(jobRepository.save(job));
     }
 
+    // Manual Retry Job
+    public JobResponse retryJob(Long id) {
+
+        Job job = findJob(id);
+
+        if (job.getStatus() != JobStatus.FAILED) {
+            throw new RuntimeException(
+                    "Only FAILED jobs can be retried"
+            );
+        }
+
+        job.setStatus(JobStatus.PENDING);
+        job.setRetryCount(0);
+        job.setUpdatedAt(LocalDateTime.now());
+
+        return toResponse(jobRepository.save(job));
+    }
+
     // Delete Job
     public void deleteJob(Long id) {
 
