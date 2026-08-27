@@ -19,6 +19,9 @@ public class Job {
     @Enumerated(EnumType.STRING)
     private JobStatus status;
 
+@Enumerated(EnumType.STRING)
+private JobPriority priority;
+
     private LocalDateTime scheduledAt;
 
     private LocalDateTime createdAt;
@@ -80,7 +83,9 @@ public class Job {
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-
+public JobPriority getPriority() {
+    return priority;
+}
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
@@ -100,7 +105,9 @@ public class Job {
     public String getPayload() {
         return payload;
     }
-
+public void setPriority(JobPriority priority) {
+    this.priority = priority;
+}
     public void setPayload(String payload) {
         this.payload = payload;
     }
