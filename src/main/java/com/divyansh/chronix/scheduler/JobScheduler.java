@@ -31,7 +31,7 @@ public class JobScheduler {
         LocalDateTime now = LocalDateTime.now();
 
         List<Job> jobs =
-                jobRepository.findByStatusAndScheduledAtLessThanEqual(
+                jobRepository.findDueJobsForUpdate(
                         JobStatus.PENDING,
                         now
                 );
@@ -48,7 +48,10 @@ public class JobScheduler {
             if (claimed == 1) {
 
                 System.out.println(
-                        "Scheduler claimed job: " + job.getName()
+                        "Scheduler claimed job: "
+                                + job.getName()
+                                + " | Priority: "
+                                + job.getPriority()
                 );
 
                 jobExecutor.execute(job);
@@ -56,7 +59,8 @@ public class JobScheduler {
             } else {
 
                 System.out.println(
-                        "Job already claimed: " + job.getName()
+                        "Job already claimed: "
+                                + job.getName()
                 );
             }
         }

@@ -28,6 +28,7 @@ public class JobService {
 
         job.setName(request.getName());
         job.setType(request.getType());
+        job.setPriority(request.getPriority());
         job.setScheduledAt(request.getScheduledAt());
         job.setPayload(request.getPayload());
 
@@ -68,6 +69,7 @@ public class JobService {
 
         job.setName(request.getName());
         job.setType(request.getType());
+        job.setPriority(request.getPriority());
         job.setScheduledAt(request.getScheduledAt());
         job.setPayload(request.getPayload());
         job.setUpdatedAt(LocalDateTime.now());
@@ -171,7 +173,8 @@ public class JobService {
                 job.getId(),
                 job.getName(),
                 job.getType(),
-                job.getStatus()
+                job.getStatus(),
+                job.getPriority()
         );
     }
 }

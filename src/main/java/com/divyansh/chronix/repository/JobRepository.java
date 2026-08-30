@@ -11,6 +11,7 @@ import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.Modifying;
+
 public interface JobRepository extends JpaRepository<Job, Long> {
 
     List<Job> findByStatusAndScheduledAtLessThanEqual(
@@ -24,6 +25,14 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             FROM Job j
             WHERE j.status = :status
             AND j.scheduledAt <= :scheduledAt
+            ORDER BY
+                CASE j.priority
+                    WHEN com.divyansh.chronix.entity.JobPriority.HIGH THEN 1
+                    WHEN com.divyansh.chronix.entity.JobPriority.MEDIUM THEN 2
+                    WHEN com.divyansh.chronix.entity.JobPriority.LOW THEN 3
+                    ELSE 4
+                END,
+                j.scheduledAt ASC
             """)
     List<Job> findDueJobsForUpdate(
             @Param("status") JobStatus status,

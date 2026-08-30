@@ -1,5 +1,6 @@
 package com.divyansh.chronix.dto;
 
+import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobType;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +15,9 @@ public class CreateJobRequest {
 
     @NotNull(message = "Job type is required")
     private JobType type;
+
+    @NotNull(message = "Job priority is required")
+    private JobPriority priority;
 
     @NotNull(message = "Scheduled time is required")
     @FutureOrPresent(message = "Scheduled time must be in the present or future")
@@ -39,6 +43,14 @@ public class CreateJobRequest {
 
     public void setType(JobType type) {
         this.type = type;
+    }
+
+    public JobPriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(JobPriority priority) {
+        this.priority = priority;
     }
 
     public LocalDateTime getScheduledAt() {
