@@ -19,8 +19,8 @@ public class Job {
     @Enumerated(EnumType.STRING)
     private JobStatus status;
 
-@Enumerated(EnumType.STRING)
-private JobPriority priority;
+    @Enumerated(EnumType.STRING)
+    private JobPriority priority;
 
     private LocalDateTime scheduledAt;
 
@@ -32,6 +32,11 @@ private JobPriority priority;
 
     @Column(columnDefinition = "TEXT")
     private String payload;
+
+    // Job dependency
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "depends_on_job_id")
+    private Job dependsOn;
 
     public Job() {
     }
@@ -68,6 +73,14 @@ private JobPriority priority;
         this.status = status;
     }
 
+    public JobPriority getPriority() {
+        return priority;
+    }
+
+    public void setPriority(JobPriority priority) {
+        this.priority = priority;
+    }
+
     public LocalDateTime getScheduledAt() {
         return scheduledAt;
     }
@@ -83,9 +96,7 @@ private JobPriority priority;
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-public JobPriority getPriority() {
-    return priority;
-}
+
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
@@ -105,10 +116,16 @@ public JobPriority getPriority() {
     public String getPayload() {
         return payload;
     }
-public void setPriority(JobPriority priority) {
-    this.priority = priority;
-}
+
     public void setPayload(String payload) {
         this.payload = payload;
+    }
+
+    public Job getDependsOn() {
+        return dependsOn;
+    }
+
+    public void setDependsOn(Job dependsOn) {
+        this.dependsOn = dependsOn;
     }
 }
