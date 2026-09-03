@@ -38,6 +38,26 @@ public class JobScheduler {
 
         for (Job job : jobs) {
 
+            // Check job dependency
+            if (job.getDependsOn() != null) {
+
+                Job dependency = job.getDependsOn();
+
+                if (dependency.getStatus() != JobStatus.COMPLETED) {
+
+                    System.out.println(
+                            "Job waiting for dependency: "
+                                    + job.getName()
+                                    + " | Depends on: "
+                                    + dependency.getName()
+                                    + " | Dependency Status: "
+                                    + dependency.getStatus()
+                    );
+
+                    continue;
+                }
+            }
+
             int claimed = jobRepository.claimJob(
                     job.getId(),
                     JobStatus.PENDING,
