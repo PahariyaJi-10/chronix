@@ -21,7 +21,6 @@ public class JobService {
         this.jobRepository = jobRepository;
     }
 
-    // Create Job
     public JobResponse createJob(CreateJobRequest request) {
 
         Job job = new Job();
@@ -31,6 +30,22 @@ public class JobService {
         job.setPriority(request.getPriority());
         job.setScheduledAt(request.getScheduledAt());
         job.setPayload(request.getPayload());
+
+        // Set job dependency
+        if (request.getDependsOnJobId() != null) {
+
+            if (request.getDependsOnJobId() == null) {
+                throw new RuntimeException(
+                        "A job cannot depend on itself"
+                );
+            }
+
+            Job dependencyJob = findJob(
+                    request.getDependsOnJobId()
+            );
+
+            job.setDependsOn(dependencyJob);
+        }
 
         job.setStatus(JobStatus.PENDING);
         job.setRetryCount(0);
@@ -43,7 +58,6 @@ public class JobService {
         return toResponse(savedJob);
     }
 
-    // Get All Jobs
     public List<JobResponse> getAllJobs() {
 
         return jobRepository.findAll()
@@ -52,7 +66,6 @@ public class JobService {
                 .collect(Collectors.toList());
     }
 
-    // Get Job By ID
     public JobResponse getJobById(Long id) {
 
         Job job = findJob(id);
@@ -60,7 +73,6 @@ public class JobService {
         return toResponse(job);
     }
 
-    // Update Job
     public JobResponse updateJob(
             Long id,
             CreateJobRequest request) {
@@ -72,6 +84,27 @@ public class JobService {
         job.setPriority(request.getPriority());
         job.setScheduledAt(request.getScheduledAt());
         job.setPayload(request.getPayload());
+
+        // Update job dependency
+        if (request.getDependsOnJobId() != null) {
+
+            if (request.getDependsOnJobId().equals(id)) {
+                throw new RuntimeException(
+                        "A job cannot depend on itself"
+                );
+            }
+
+            Job dependencyJob = findJob(
+                    request.getDependsOnJobId()
+            );
+
+            job.setDependsOn(dependencyJob);
+
+        } else {
+
+            job.setDependsOn(null);
+        }
+
         job.setUpdatedAt(LocalDateTime.now());
 
         Job updatedJob = jobRepository.save(job);
@@ -79,7 +112,6 @@ public class JobService {
         return toResponse(updatedJob);
     }
 
-    // Cancel Job
     public JobResponse cancelJob(Long id) {
 
         Job job = findJob(id);
@@ -96,7 +128,6 @@ public class JobService {
         return toResponse(jobRepository.save(job));
     }
 
-    // Pause Job
     public JobResponse pauseJob(Long id) {
 
         Job job = findJob(id);
@@ -113,7 +144,6 @@ public class JobService {
         return toResponse(jobRepository.save(job));
     }
 
-    // Resume Job
     public JobResponse resumeJob(Long id) {
 
         Job job = findJob(id);
@@ -130,7 +160,6 @@ public class JobService {
         return toResponse(jobRepository.save(job));
     }
 
-    // Manual Retry Job
     public JobResponse retryJob(Long id) {
 
         Job job = findJob(id);
@@ -148,7 +177,6 @@ public class JobService {
         return toResponse(jobRepository.save(job));
     }
 
-    // Delete Job
     public void deleteJob(Long id) {
 
         Job job = findJob(id);
@@ -156,7 +184,6 @@ public class JobService {
         jobRepository.delete(job);
     }
 
-    // Find Job
     private Job findJob(Long id) {
 
         return jobRepository.findById(id)
@@ -166,15 +193,17 @@ public class JobService {
                         ));
     }
 
-    // Convert Entity to Response
     private JobResponse toResponse(Job job) {
 
         return new JobResponse(
-                job.getId(),
-                job.getName(),
-                job.getType(),
-                job.getStatus(),
-                job.getPriority()
-        );
+        job.getId(),
+        job.getName(),
+        job.getType(),
+        job.getStatus(),
+        job.getPriority(),
+        job.getDependsOn() != null
+                ? job.getDependsOn().getId()
+                : null
+);
     }
 }

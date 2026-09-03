@@ -11,6 +11,7 @@ public class JobResponse {
     private JobType type;
     private JobStatus status;
     private JobPriority priority;
+    private Long dependsOnJobId;
 
     public JobResponse() {
     }
@@ -20,13 +21,15 @@ public class JobResponse {
             String name,
             JobType type,
             JobStatus status,
-            JobPriority priority) {
+            JobPriority priority,
+            Long dependsOnJobId) {
 
         this.id = id;
         this.name = name;
         this.type = type;
         this.status = status;
         this.priority = priority;
+        this.dependsOnJobId = dependsOnJobId;
     }
 
     public Long getId() {
@@ -47,5 +50,9 @@ public class JobResponse {
 
     public JobPriority getPriority() {
         return priority;
+    }
+
+    public Long getDependsOnJobId() {
+        return dependsOnJobId;
     }
 }

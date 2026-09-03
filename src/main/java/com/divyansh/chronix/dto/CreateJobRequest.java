@@ -26,6 +26,8 @@ public class CreateJobRequest {
     @NotBlank(message = "Payload is required")
     private String payload;
 
+    private Long dependsOnJobId;
+
     public CreateJobRequest() {
     }
 
@@ -67,5 +69,13 @@ public class CreateJobRequest {
 
     public void setPayload(String payload) {
         this.payload = payload;
+    }
+
+    public Long getDependsOnJobId() {
+        return dependsOnJobId;
+    }
+
+    public void setDependsOnJobId(Long dependsOnJobId) {
+        this.dependsOnJobId = dependsOnJobId;
     }
 }
