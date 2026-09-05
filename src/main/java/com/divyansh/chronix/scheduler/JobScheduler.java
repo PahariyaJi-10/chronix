@@ -43,6 +43,29 @@ public class JobScheduler {
 
                 Job dependency = job.getDependsOn();
 
+                // Cancel job if dependency permanently failed
+                // or was cancelled
+                if (dependency.getStatus() == JobStatus.FAILED
+                        || dependency.getStatus() == JobStatus.CANCELLED) {
+
+                    job.setStatus(JobStatus.CANCELLED);
+                    job.setUpdatedAt(now);
+
+                    jobRepository.save(job);
+
+                    System.out.println(
+                            "Job cancelled because dependency failed: "
+                                    + job.getName()
+                                    + " | Depends on: "
+                                    + dependency.getName()
+                                    + " | Dependency Status: "
+                                    + dependency.getStatus()
+                    );
+
+                    continue;
+                }
+
+                // Wait until dependency is completed
                 if (dependency.getStatus() != JobStatus.COMPLETED) {
 
                     System.out.println(
@@ -58,6 +81,7 @@ public class JobScheduler {
                 }
             }
 
+            // Atomically claim the job
             int claimed = jobRepository.claimJob(
                     job.getId(),
                     JobStatus.PENDING,
