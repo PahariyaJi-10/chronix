@@ -1,8 +1,10 @@
 package com.divyansh.chronix.executor;
 
+import com.divyansh.chronix.entity.DeadLetterJob;
 import com.divyansh.chronix.entity.Job;
 import com.divyansh.chronix.entity.JobExecution;
 import com.divyansh.chronix.entity.JobStatus;
+import com.divyansh.chronix.repository.DeadLetterJobRepository;
 import com.divyansh.chronix.repository.JobExecutionRepository;
 import com.divyansh.chronix.repository.JobRepository;
 import org.springframework.scheduling.annotation.Async;
@@ -17,18 +19,20 @@ public class JobExecutor {
 
     private final JobRepository jobRepository;
     private final JobExecutionRepository jobExecutionRepository;
+    private final DeadLetterJobRepository deadLetterJobRepository;
 
     public JobExecutor(
             JobRepository jobRepository,
-            JobExecutionRepository jobExecutionRepository) {
+            JobExecutionRepository jobExecutionRepository,
+            DeadLetterJobRepository deadLetterJobRepository) {
 
         this.jobRepository = jobRepository;
         this.jobExecutionRepository = jobExecutionRepository;
+        this.deadLetterJobRepository = deadLetterJobRepository;
     }
 
-@Async("chronixTaskExecutor")
-public void execute(Job job)  {
-
+    @Async("chronixTaskExecutor")
+    public void execute(Job job) {
 
         JobExecution execution = new JobExecution();
 
@@ -48,19 +52,15 @@ public void execute(Job job)  {
 
         try {
 
-            // Simulate job execution
             Thread.sleep(5000);
 
-            // Simulate failure
             if (job.getPayload() != null
                     && job.getPayload().equalsIgnoreCase("FAIL")) {
 
                 throw new RuntimeException("Simulated job failure");
             }
 
-            // Job completed successfully
             job.setStatus(JobStatus.COMPLETED);
-
             execution.setStatus(JobStatus.COMPLETED);
 
             System.out.println(
@@ -78,7 +78,6 @@ public void execute(Job job)  {
 
             if (retries < MAX_RETRIES) {
 
-                // Allow scheduler to pick it up again
                 job.setStatus(JobStatus.PENDING);
 
                 System.out.println(
@@ -89,13 +88,32 @@ public void execute(Job job)  {
 
             } else {
 
-                // Maximum retries reached
                 job.setStatus(JobStatus.FAILED);
 
                 System.out.println(
                         "Job permanently failed: "
                                 + job.getName()
                 );
+
+                // Move permanently failed job to Dead-Letter Queue
+                if (!deadLetterJobRepository.existsByJobId(job.getId())) {
+
+                    DeadLetterJob deadLetterJob = new DeadLetterJob();
+
+                    deadLetterJob.setJob(job);
+                    deadLetterJob.setJobName(job.getName());
+                    deadLetterJob.setAttemptCount(retries);
+                    deadLetterJob.setErrorMessage(e.getMessage());
+                    deadLetterJob.setPayload(job.getPayload());
+                    deadLetterJob.setFailedAt(LocalDateTime.now());
+
+                    deadLetterJobRepository.save(deadLetterJob);
+
+                    System.out.println(
+                            "Job moved to Dead-Letter Queue: "
+                                    + job.getName()
+                    );
+                }
             }
 
         } finally {
@@ -103,7 +121,6 @@ public void execute(Job job)  {
             LocalDateTime finishedAt = LocalDateTime.now();
 
             execution.setFinishedAt(finishedAt);
-
             job.setUpdatedAt(finishedAt);
 
             jobRepository.save(job);
