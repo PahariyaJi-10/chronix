@@ -14,6 +14,7 @@ public class DeadLetterJobController {
 
     public DeadLetterJobController(
             DeadLetterJobService deadLetterJobService) {
+
         this.deadLetterJobService = deadLetterJobService;
     }
 
@@ -22,5 +23,13 @@ public class DeadLetterJobController {
 
         return deadLetterJobService
                 .getAllDeadLetterJobs();
+    }
+
+    @PostMapping("/{id}/reprocess")
+    public DeadLetterJobResponse reprocessJob(
+            @PathVariable Long id) {
+
+        return deadLetterJobService
+                .reprocessJob(id);
     }
 }
