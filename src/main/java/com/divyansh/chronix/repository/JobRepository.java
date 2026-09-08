@@ -53,4 +53,5 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             @Param("running") JobStatus running,
             @Param("updatedAt") LocalDateTime updatedAt
     );
+    long countByStatus(JobStatus status);
 }
