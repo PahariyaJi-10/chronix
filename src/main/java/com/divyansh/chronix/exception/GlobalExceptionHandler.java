@@ -1,35 +1,41 @@
 package com.divyansh.chronix.exception;
 
+import com.divyansh.chronix.dto.ApiErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.validation.FieldError;
-import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(JobNotFoundException.class)
-    public ResponseEntity<String> handleJobNotFound(JobNotFoundException ex) {
-        return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(ex.getMessage());
+    public ApiErrorResponse handleJobNotFound(
+            JobNotFoundException exception,
+            HttpServletRequest request) {
+
+        return new ApiErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.NOT_FOUND.value(),
+                "JOB_NOT_FOUND",
+                exception.getMessage(),
+                request.getRequestURI()
+        );
     }
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationErrors(
-            MethodArgumentNotValidException ex) {
+    @ExceptionHandler(RuntimeException.class)
+    public ApiErrorResponse handleRuntimeException(
+            RuntimeException exception,
+            HttpServletRequest request) {
 
-        Map<String, String> errors = new HashMap<>();
-
-        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            errors.put(error.getField(), error.getDefaultMessage());
-        }
-
-        return ResponseEntity.badRequest().body(errors);
+        return new ApiErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.BAD_REQUEST.value(),
+                "BAD_REQUEST",
+                exception.getMessage(),
+                request.getRequestURI()
+        );
     }
 }

@@ -50,12 +50,16 @@ public class DeadLetterJobService {
 
         Job job = deadLetterJob.getJob();
 
+        // Create response before deleting the DLQ record
+        DeadLetterJobResponse response =
+                toResponse(deadLetterJob);
+
         // Reset job for a fresh retry cycle
         job.setStatus(JobStatus.PENDING);
         job.setRetryCount(0);
         job.setUpdatedAt(LocalDateTime.now());
 
-        Job updatedJob = jobRepository.save(job);
+        jobRepository.save(job);
 
         // Remove the job from the Dead-Letter Queue
         deadLetterJobRepository.delete(deadLetterJob);
@@ -65,7 +69,7 @@ public class DeadLetterJobService {
                         + job.getName()
         );
 
-        return toResponse(deadLetterJob);
+        return response;
     }
 
     private DeadLetterJobResponse toResponse(
