@@ -3,6 +3,7 @@ package com.divyansh.chronix.dto;
 import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobStatus;
 import com.divyansh.chronix.entity.JobType;
+import com.divyansh.chronix.entity.ScheduleType;
 
 public class JobResponse {
 
@@ -12,6 +13,8 @@ public class JobResponse {
     private JobStatus status;
     private JobPriority priority;
     private Long dependsOnJobId;
+    private ScheduleType scheduleType;
+    private String cronExpression;
 
     public JobResponse() {
     }
@@ -22,7 +25,9 @@ public class JobResponse {
             JobType type,
             JobStatus status,
             JobPriority priority,
-            Long dependsOnJobId) {
+            Long dependsOnJobId,
+            ScheduleType scheduleType,
+            String cronExpression) {
 
         this.id = id;
         this.name = name;
@@ -30,6 +35,8 @@ public class JobResponse {
         this.status = status;
         this.priority = priority;
         this.dependsOnJobId = dependsOnJobId;
+        this.scheduleType = scheduleType;
+        this.cronExpression = cronExpression;
     }
 
     public Long getId() {
@@ -54,5 +61,13 @@ public class JobResponse {
 
     public Long getDependsOnJobId() {
         return dependsOnJobId;
+    }
+
+    public ScheduleType getScheduleType() {
+        return scheduleType;
+    }
+
+    public String getCronExpression() {
+        return cronExpression;
     }
 }

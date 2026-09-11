@@ -4,9 +4,11 @@ import com.divyansh.chronix.entity.DeadLetterJob;
 import com.divyansh.chronix.entity.Job;
 import com.divyansh.chronix.entity.JobExecution;
 import com.divyansh.chronix.entity.JobStatus;
+import com.divyansh.chronix.entity.ScheduleType;
 import com.divyansh.chronix.repository.DeadLetterJobRepository;
 import com.divyansh.chronix.repository.JobExecutionRepository;
 import com.divyansh.chronix.repository.JobRepository;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -41,12 +43,12 @@ public class JobExecutor {
         execution.setStartedAt(LocalDateTime.now());
         execution.setAttemptNumber(job.getRetryCount() + 1);
 
-        // Job is already RUNNING because the scheduler claimed it.
         jobExecutionRepository.save(execution);
 
         System.out.println(
                 "Executing Job: " + job.getName()
                         + " | Attempt: " + execution.getAttemptNumber()
+                        + " | Schedule: " + job.getScheduleType()
                         + " | Thread: " + Thread.currentThread().getName()
         );
 
@@ -60,12 +62,13 @@ public class JobExecutor {
                 throw new RuntimeException("Simulated job failure");
             }
 
-            job.setStatus(JobStatus.COMPLETED);
             execution.setStatus(JobStatus.COMPLETED);
 
             System.out.println(
                     "Completed Job: " + job.getName()
             );
+
+            scheduleNextExecution(job);
 
         } catch (Exception e) {
 
@@ -95,7 +98,6 @@ public class JobExecutor {
                                 + job.getName()
                 );
 
-                // Move permanently failed job to Dead-Letter Queue
                 if (!deadLetterJobRepository.existsByJobId(job.getId())) {
 
                     DeadLetterJob deadLetterJob = new DeadLetterJob();
@@ -126,5 +128,82 @@ public class JobExecutor {
             jobRepository.save(job);
             jobExecutionRepository.save(execution);
         }
+    }
+
+    private void scheduleNextExecution(Job job) {
+
+        ScheduleType scheduleType = job.getScheduleType();
+
+        if (scheduleType == null
+                || scheduleType == ScheduleType.ONE_TIME) {
+
+            job.setStatus(JobStatus.COMPLETED);
+            return;
+        }
+
+        LocalDateTime currentScheduledTime =
+                job.getScheduledAt();
+
+        LocalDateTime nextScheduledTime;
+
+        switch (scheduleType) {
+
+            case HOURLY:
+
+                nextScheduledTime =
+                        currentScheduledTime.plusHours(1);
+
+                break;
+
+            case DAILY:
+
+                nextScheduledTime =
+                        currentScheduledTime.plusDays(1);
+
+                break;
+
+            case CRON:
+
+                if (job.getCronExpression() == null
+                        || job.getCronExpression().isBlank()) {
+
+                    throw new IllegalArgumentException(
+                            "Cron expression is required for CRON schedule"
+                    );
+                }
+
+                CronExpression cron =
+                        CronExpression.parse(
+                                job.getCronExpression()
+                        );
+
+                nextScheduledTime =
+                        cron.next(currentScheduledTime);
+
+                if (nextScheduledTime == null) {
+
+                    throw new IllegalArgumentException(
+                            "Unable to calculate next execution time"
+                    );
+                }
+
+                break;
+
+            default:
+
+                job.setStatus(JobStatus.COMPLETED);
+                return;
+        }
+
+        job.setScheduledAt(nextScheduledTime);
+        job.setRetryCount(0);
+        job.setStatus(JobStatus.PENDING);
+
+        System.out.println(
+                "Next execution scheduled for: "
+                        + job.getName()
+                        + " | Next run: "
+                        + nextScheduledTime
+        );
     }
 }

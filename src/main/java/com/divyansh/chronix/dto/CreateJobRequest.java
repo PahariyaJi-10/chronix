@@ -2,6 +2,7 @@ package com.divyansh.chronix.dto;
 
 import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobType;
+import com.divyansh.chronix.entity.ScheduleType;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -27,6 +28,11 @@ public class CreateJobRequest {
     private String payload;
 
     private Long dependsOnJobId;
+
+    @NotNull(message = "Schedule type is required")
+    private ScheduleType scheduleType;
+
+    private String cronExpression;
 
     public CreateJobRequest() {
     }
@@ -77,5 +83,21 @@ public class CreateJobRequest {
 
     public void setDependsOnJobId(Long dependsOnJobId) {
         this.dependsOnJobId = dependsOnJobId;
+    }
+
+    public ScheduleType getScheduleType() {
+        return scheduleType;
+    }
+
+    public void setScheduleType(ScheduleType scheduleType) {
+        this.scheduleType = scheduleType;
+    }
+
+    public String getCronExpression() {
+        return cronExpression;
+    }
+
+    public void setCronExpression(String cronExpression) {
+        this.cronExpression = cronExpression;
     }
 }

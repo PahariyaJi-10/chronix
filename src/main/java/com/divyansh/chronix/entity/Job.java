@@ -24,6 +24,11 @@ public class Job {
 
     private LocalDateTime scheduledAt;
 
+    @Enumerated(EnumType.STRING)
+    private ScheduleType scheduleType;
+
+    private String cronExpression;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -87,6 +92,22 @@ public class Job {
 
     public void setScheduledAt(LocalDateTime scheduledAt) {
         this.scheduledAt = scheduledAt;
+    }
+
+    public ScheduleType getScheduleType() {
+        return scheduleType;
+    }
+
+    public void setScheduleType(ScheduleType scheduleType) {
+        this.scheduleType = scheduleType;
+    }
+
+    public String getCronExpression() {
+        return cronExpression;
+    }
+
+    public void setCronExpression(String cronExpression) {
+        this.cronExpression = cronExpression;
     }
 
     public LocalDateTime getCreatedAt() {
