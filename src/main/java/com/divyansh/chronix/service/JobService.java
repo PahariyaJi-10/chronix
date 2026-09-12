@@ -10,7 +10,9 @@ import com.divyansh.chronix.repository.JobRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -44,6 +46,15 @@ public class JobService {
 
             Job dependencyJob =
                     findJob(request.getDependsOnJobId());
+
+            if (createsCircularDependency(
+                    job,
+                    dependencyJob)) {
+
+                throw new RuntimeException(
+                        "Circular job dependency detected"
+                );
+            }
 
             job.setDependsOn(dependencyJob);
         }
@@ -105,6 +116,15 @@ public class JobService {
 
             Job dependencyJob =
                     findJob(request.getDependsOnJobId());
+
+            if (createsCircularDependency(
+                    job,
+                    dependencyJob)) {
+
+                throw new RuntimeException(
+                        "Circular job dependency detected"
+                );
+            }
 
             job.setDependsOn(dependencyJob);
 
@@ -248,6 +268,47 @@ public class JobService {
                     "Cron expression is only allowed for CRON schedule"
             );
         }
+    }
+
+    /**
+     * Checks whether assigning dependencyJob as the dependency
+     * of currentJob would create a circular dependency.
+     *
+     * Example:
+     *
+     * Job A -> Job B
+     * Job B -> Job C
+     * Job C -> Job A
+     *
+     * This method detects the cycle before saving.
+     */
+    private boolean createsCircularDependency(
+            Job currentJob,
+            Job dependencyJob) {
+
+        Set<Long> visitedJobs = new HashSet<>();
+
+        Job current = dependencyJob;
+
+        while (current != null) {
+
+            Long currentId = current.getId();
+
+            if (currentId != null) {
+
+                if (currentId.equals(currentJob.getId())) {
+                    return true;
+                }
+
+                if (!visitedJobs.add(currentId)) {
+                    return true;
+                }
+            }
+
+            current = current.getDependsOn();
+        }
+
+        return false;
     }
 
     private Job findJob(Long id) {
