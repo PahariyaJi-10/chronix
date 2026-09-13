@@ -1,16 +1,19 @@
 package com.divyansh.chronix.repository;
 
 import com.divyansh.chronix.entity.Job;
+import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobStatus;
+import com.divyansh.chronix.entity.JobType;
+import com.divyansh.chronix.entity.ScheduleType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import jakarta.persistence.LockModeType;
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.data.jpa.repository.Modifying;
 
 public interface JobRepository extends JpaRepository<Job, Long> {
 
@@ -53,5 +56,34 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             @Param("running") JobStatus running,
             @Param("updatedAt") LocalDateTime updatedAt
     );
+
     long countByStatus(JobStatus status);
+
+    List<Job> findByStatus(JobStatus status);
+
+    List<Job> findByPriority(JobPriority priority);
+
+    List<Job> findByType(JobType type);
+
+    List<Job> findByScheduleType(ScheduleType scheduleType);
+
+    List<Job> findByStatusAndPriority(
+            JobStatus status,
+            JobPriority priority
+    );
+
+    List<Job> findByStatusAndType(
+            JobStatus status,
+            JobType type
+    );
+
+    List<Job> findByStatusAndScheduleType(
+            JobStatus status,
+            ScheduleType scheduleType
+    );
+
+    List<Job> findByPriorityAndType(
+            JobPriority priority,
+            JobType type
+    );
 }

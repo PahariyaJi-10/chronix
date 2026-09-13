@@ -3,7 +3,9 @@ package com.divyansh.chronix.service;
 import com.divyansh.chronix.dto.CreateJobRequest;
 import com.divyansh.chronix.dto.JobResponse;
 import com.divyansh.chronix.entity.Job;
+import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobStatus;
+import com.divyansh.chronix.entity.JobType;
 import com.divyansh.chronix.entity.ScheduleType;
 import com.divyansh.chronix.exception.JobNotFoundException;
 import com.divyansh.chronix.repository.JobRepository;
@@ -70,10 +72,64 @@ public class JobService {
         return toResponse(savedJob);
     }
 
-    public List<JobResponse> getAllJobs() {
+    public List<JobResponse> getAllJobs(
+            JobStatus status,
+            JobPriority priority,
+            JobType type,
+            ScheduleType scheduleType) {
 
-        return jobRepository.findAll()
-                .stream()
+        List<Job> jobs;
+
+        if (status != null && priority != null) {
+
+            jobs = jobRepository.findByStatusAndPriority(
+                    status,
+                    priority
+            );
+
+        } else if (status != null && type != null) {
+
+            jobs = jobRepository.findByStatusAndType(
+                    status,
+                    type
+            );
+
+        } else if (status != null && scheduleType != null) {
+
+            jobs = jobRepository.findByStatusAndScheduleType(
+                    status,
+                    scheduleType
+            );
+
+        } else if (priority != null && type != null) {
+
+            jobs = jobRepository.findByPriorityAndType(
+                    priority,
+                    type
+            );
+
+        } else if (status != null) {
+
+            jobs = jobRepository.findByStatus(status);
+
+        } else if (priority != null) {
+
+            jobs = jobRepository.findByPriority(priority);
+
+        } else if (type != null) {
+
+            jobs = jobRepository.findByType(type);
+
+        } else if (scheduleType != null) {
+
+            jobs = jobRepository.findByScheduleType(scheduleType);
+
+        } else {
+
+            jobs = jobRepository.findAll();
+        }
+
+        return jobs.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -270,18 +326,6 @@ public class JobService {
         }
     }
 
-    /**
-     * Checks whether assigning dependencyJob as the dependency
-     * of currentJob would create a circular dependency.
-     *
-     * Example:
-     *
-     * Job A -> Job B
-     * Job B -> Job C
-     * Job C -> Job A
-     *
-     * This method detects the cycle before saving.
-     */
     private boolean createsCircularDependency(
             Job currentJob,
             Job dependencyJob) {

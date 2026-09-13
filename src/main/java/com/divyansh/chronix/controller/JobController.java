@@ -2,6 +2,10 @@ package com.divyansh.chronix.controller;
 
 import com.divyansh.chronix.dto.CreateJobRequest;
 import com.divyansh.chronix.dto.JobResponse;
+import com.divyansh.chronix.entity.JobPriority;
+import com.divyansh.chronix.entity.JobStatus;
+import com.divyansh.chronix.entity.JobType;
+import com.divyansh.chronix.entity.ScheduleType;
 import com.divyansh.chronix.service.JobService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -26,11 +30,20 @@ public class JobController {
         return jobService.createJob(request);
     }
 
-    // Get All Jobs
+    // Get All Jobs / Filter Jobs
     @GetMapping
-    public List<JobResponse> getAllJobs() {
+    public List<JobResponse> getAllJobs(
+            @RequestParam(required = false) JobStatus status,
+            @RequestParam(required = false) JobPriority priority,
+            @RequestParam(required = false) JobType type,
+            @RequestParam(required = false) ScheduleType scheduleType) {
 
-        return jobService.getAllJobs();
+        return jobService.getAllJobs(
+                status,
+                priority,
+                type,
+                scheduleType
+        );
     }
 
     // Get Job By ID
