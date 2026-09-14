@@ -3,6 +3,7 @@ package com.divyansh.chronix.service;
 import com.divyansh.chronix.dto.CreateJobRequest;
 import com.divyansh.chronix.dto.JobResponse;
 import com.divyansh.chronix.entity.Job;
+import com.divyansh.chronix.entity.JobAuditAction;
 import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobStatus;
 import com.divyansh.chronix.entity.JobType;
@@ -15,17 +16,20 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 public class JobService {
 
     private final JobRepository jobRepository;
+    private final JobAuditLogService jobAuditLogService;
 
-    public JobService(JobRepository jobRepository) {
+    public JobService(
+            JobRepository jobRepository,
+            JobAuditLogService jobAuditLogService) {
+
         this.jobRepository = jobRepository;
+        this.jobAuditLogService = jobAuditLogService;
     }
 
     public JobResponse createJob(CreateJobRequest request) {
@@ -70,6 +74,12 @@ public class JobService {
         job.setUpdatedAt(LocalDateTime.now());
 
         Job savedJob = jobRepository.save(job);
+
+        jobAuditLogService.log(
+                savedJob,
+                JobAuditAction.JOB_CREATED,
+                "Job created successfully"
+        );
 
         return toResponse(savedJob);
     }
@@ -211,6 +221,12 @@ public class JobService {
         Job updatedJob =
                 jobRepository.save(job);
 
+        jobAuditLogService.log(
+                updatedJob,
+                JobAuditAction.JOB_UPDATED,
+                "Job updated successfully"
+        );
+
         return toResponse(updatedJob);
     }
 
@@ -228,9 +244,16 @@ public class JobService {
         job.setStatus(JobStatus.CANCELLED);
         job.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(
-                jobRepository.save(job)
+        Job cancelledJob =
+                jobRepository.save(job);
+
+        jobAuditLogService.log(
+                cancelledJob,
+                JobAuditAction.JOB_CANCELLED,
+                "Job cancelled successfully"
         );
+
+        return toResponse(cancelledJob);
     }
 
     public JobResponse pauseJob(Long id) {
@@ -247,9 +270,16 @@ public class JobService {
         job.setStatus(JobStatus.PAUSED);
         job.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(
-                jobRepository.save(job)
+        Job pausedJob =
+                jobRepository.save(job);
+
+        jobAuditLogService.log(
+                pausedJob,
+                JobAuditAction.JOB_PAUSED,
+                "Job paused successfully"
         );
+
+        return toResponse(pausedJob);
     }
 
     public JobResponse resumeJob(Long id) {
@@ -266,9 +296,16 @@ public class JobService {
         job.setStatus(JobStatus.PENDING);
         job.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(
-                jobRepository.save(job)
+        Job resumedJob =
+                jobRepository.save(job);
+
+        jobAuditLogService.log(
+                resumedJob,
+                JobAuditAction.JOB_RESUMED,
+                "Job resumed successfully"
         );
+
+        return toResponse(resumedJob);
     }
 
     public JobResponse retryJob(Long id) {
@@ -286,9 +323,16 @@ public class JobService {
         job.setRetryCount(0);
         job.setUpdatedAt(LocalDateTime.now());
 
-        return toResponse(
-                jobRepository.save(job)
+        Job retriedJob =
+                jobRepository.save(job);
+
+        jobAuditLogService.log(
+                retriedJob,
+                JobAuditAction.JOB_RETRY_REQUESTED,
+                "Manual retry requested"
         );
+
+        return toResponse(retriedJob);
     }
 
     public void deleteJob(Long id) {
