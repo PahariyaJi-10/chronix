@@ -9,6 +9,8 @@ import com.divyansh.chronix.entity.JobType;
 import com.divyansh.chronix.entity.ScheduleType;
 import com.divyansh.chronix.exception.JobNotFoundException;
 import com.divyansh.chronix.repository.JobRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -72,66 +74,81 @@ public class JobService {
         return toResponse(savedJob);
     }
 
-    public List<JobResponse> getAllJobs(
+    public Page<JobResponse> getAllJobs(
             JobStatus status,
             JobPriority priority,
             JobType type,
-            ScheduleType scheduleType) {
+            ScheduleType scheduleType,
+            Pageable pageable) {
 
-        List<Job> jobs;
+        Page<Job> jobs;
 
         if (status != null && priority != null) {
 
             jobs = jobRepository.findByStatusAndPriority(
                     status,
-                    priority
+                    priority,
+                    pageable
             );
 
         } else if (status != null && type != null) {
 
             jobs = jobRepository.findByStatusAndType(
                     status,
-                    type
+                    type,
+                    pageable
             );
 
         } else if (status != null && scheduleType != null) {
 
             jobs = jobRepository.findByStatusAndScheduleType(
                     status,
-                    scheduleType
+                    scheduleType,
+                    pageable
             );
 
         } else if (priority != null && type != null) {
 
             jobs = jobRepository.findByPriorityAndType(
                     priority,
-                    type
+                    type,
+                    pageable
             );
 
         } else if (status != null) {
 
-            jobs = jobRepository.findByStatus(status);
+            jobs = jobRepository.findByStatus(
+                    status,
+                    pageable
+            );
 
         } else if (priority != null) {
 
-            jobs = jobRepository.findByPriority(priority);
+            jobs = jobRepository.findByPriority(
+                    priority,
+                    pageable
+            );
 
         } else if (type != null) {
 
-            jobs = jobRepository.findByType(type);
+            jobs = jobRepository.findByType(
+                    type,
+                    pageable
+            );
 
         } else if (scheduleType != null) {
 
-            jobs = jobRepository.findByScheduleType(scheduleType);
+            jobs = jobRepository.findByScheduleType(
+                    scheduleType,
+                    pageable
+            );
 
         } else {
 
-            jobs = jobRepository.findAll();
+            jobs = jobRepository.findAll(pageable);
         }
 
-        return jobs.stream()
-                .map(this::toResponse)
-                .collect(Collectors.toList());
+        return jobs.map(this::toResponse);
     }
 
     public JobResponse getJobById(Long id) {

@@ -5,6 +5,8 @@ import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobStatus;
 import com.divyansh.chronix.entity.JobType;
 import com.divyansh.chronix.entity.ScheduleType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -85,5 +87,51 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     List<Job> findByPriorityAndType(
             JobPriority priority,
             JobType type
+    );
+
+    Page<Job> findAll(Pageable pageable);
+
+    Page<Job> findByStatus(
+            JobStatus status,
+            Pageable pageable
+    );
+
+    Page<Job> findByPriority(
+            JobPriority priority,
+            Pageable pageable
+    );
+
+    Page<Job> findByType(
+            JobType type,
+            Pageable pageable
+    );
+
+    Page<Job> findByScheduleType(
+            ScheduleType scheduleType,
+            Pageable pageable
+    );
+
+    Page<Job> findByStatusAndPriority(
+            JobStatus status,
+            JobPriority priority,
+            Pageable pageable
+    );
+
+    Page<Job> findByStatusAndType(
+            JobStatus status,
+            JobType type,
+            Pageable pageable
+    );
+
+    Page<Job> findByStatusAndScheduleType(
+            JobStatus status,
+            ScheduleType scheduleType,
+            Pageable pageable
+    );
+
+    Page<Job> findByPriorityAndType(
+            JobPriority priority,
+            JobType type,
+            Pageable pageable
     );
 }
