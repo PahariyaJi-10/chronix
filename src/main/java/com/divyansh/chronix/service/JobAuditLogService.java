@@ -1,5 +1,6 @@
 package com.divyansh.chronix.service;
 
+import com.divyansh.chronix.dto.JobAuditLogResponse;
 import com.divyansh.chronix.entity.Job;
 import com.divyansh.chronix.entity.JobAuditAction;
 import com.divyansh.chronix.entity.JobAuditLog;
@@ -36,15 +37,34 @@ public class JobAuditLogService {
         jobAuditLogRepository.save(auditLog);
     }
 
-    public List<JobAuditLog> getAllLogs() {
+    public List<JobAuditLogResponse> getAllLogs() {
 
         return jobAuditLogRepository
-                .findAllByOrderByCreatedAtDesc();
+                .findAllByOrderByCreatedAtDesc()
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
-    public List<JobAuditLog> getLogsByJobId(Long jobId) {
+    public List<JobAuditLogResponse> getLogsByJobId(Long jobId) {
 
         return jobAuditLogRepository
-                .findByJobIdOrderByCreatedAtDesc(jobId);
+                .findByJobIdOrderByCreatedAtDesc(jobId)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    private JobAuditLogResponse toResponse(
+            JobAuditLog auditLog) {
+
+        return new JobAuditLogResponse(
+                auditLog.getId(),
+                auditLog.getJob().getId(),
+                auditLog.getJob().getName(),
+                auditLog.getAction(),
+                auditLog.getMessage(),
+                auditLog.getCreatedAt()
+        );
     }
 }

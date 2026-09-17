@@ -1,6 +1,6 @@
 package com.divyansh.chronix.controller;
 
-import com.divyansh.chronix.entity.JobAuditLog;
+import com.divyansh.chronix.dto.JobAuditLogResponse;
 import com.divyansh.chronix.service.JobAuditLogService;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,13 +19,13 @@ public class JobAuditLogController {
     }
 
     @GetMapping
-    public List<JobAuditLog> getAllLogs() {
+    public List<JobAuditLogResponse> getAllLogs() {
 
         return jobAuditLogService.getAllLogs();
     }
 
     @GetMapping("/jobs/{jobId}")
-    public List<JobAuditLog> getLogsByJobId(
+    public List<JobAuditLogResponse> getLogsByJobId(
             @PathVariable Long jobId) {
 
         return jobAuditLogService
