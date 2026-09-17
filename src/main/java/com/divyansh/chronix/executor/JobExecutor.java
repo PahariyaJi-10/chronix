@@ -2,14 +2,16 @@ package com.divyansh.chronix.executor;
 
 import com.divyansh.chronix.entity.DeadLetterJob;
 import com.divyansh.chronix.entity.Job;
+import com.divyansh.chronix.entity.JobAuditAction;
 import com.divyansh.chronix.entity.JobExecution;
 import com.divyansh.chronix.entity.JobStatus;
 import com.divyansh.chronix.entity.ScheduleType;
 import com.divyansh.chronix.repository.DeadLetterJobRepository;
 import com.divyansh.chronix.repository.JobExecutionRepository;
 import com.divyansh.chronix.repository.JobRepository;
-import org.springframework.scheduling.support.CronExpression;
+import com.divyansh.chronix.service.JobAuditLogService;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,15 +24,18 @@ public class JobExecutor {
     private final JobRepository jobRepository;
     private final JobExecutionRepository jobExecutionRepository;
     private final DeadLetterJobRepository deadLetterJobRepository;
+    private final JobAuditLogService jobAuditLogService;
 
     public JobExecutor(
             JobRepository jobRepository,
             JobExecutionRepository jobExecutionRepository,
-            DeadLetterJobRepository deadLetterJobRepository) {
+            DeadLetterJobRepository deadLetterJobRepository,
+            JobAuditLogService jobAuditLogService) {
 
         this.jobRepository = jobRepository;
         this.jobExecutionRepository = jobExecutionRepository;
         this.deadLetterJobRepository = deadLetterJobRepository;
+        this.jobAuditLogService = jobAuditLogService;
     }
 
     @Async("chronixTaskExecutor")
@@ -44,6 +49,13 @@ public class JobExecutor {
         execution.setAttemptNumber(job.getRetryCount() + 1);
 
         jobExecutionRepository.save(execution);
+
+        jobAuditLogService.log(
+                job,
+                JobAuditAction.JOB_STARTED,
+                "Job execution started. Attempt: "
+                        + execution.getAttemptNumber()
+        );
 
         System.out.println(
                 "Executing Job: " + job.getName()
@@ -64,6 +76,12 @@ public class JobExecutor {
 
             execution.setStatus(JobStatus.COMPLETED);
 
+            jobAuditLogService.log(
+                    job,
+                    JobAuditAction.JOB_COMPLETED,
+                    "Job execution completed successfully"
+            );
+
             System.out.println(
                     "Completed Job: " + job.getName()
             );
@@ -78,6 +96,15 @@ public class JobExecutor {
 
             execution.setStatus(JobStatus.FAILED);
             execution.setErrorMessage(e.getMessage());
+
+            jobAuditLogService.log(
+                    job,
+                    JobAuditAction.JOB_FAILED,
+                    "Job execution failed. Attempt: "
+                            + retries
+                            + " | Error: "
+                            + e.getMessage()
+            );
 
             if (retries < MAX_RETRIES) {
 
@@ -110,6 +137,14 @@ public class JobExecutor {
                     deadLetterJob.setFailedAt(LocalDateTime.now());
 
                     deadLetterJobRepository.save(deadLetterJob);
+
+                    jobAuditLogService.log(
+                            job,
+                            JobAuditAction.JOB_MOVED_TO_DLQ,
+                            "Job moved to Dead-Letter Queue after "
+                                    + retries
+                                    + " failed attempts"
+                    );
 
                     System.out.println(
                             "Job moved to Dead-Letter Queue: "
