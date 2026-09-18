@@ -61,6 +61,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     long countByStatus(JobStatus status);
 
+    // Basic filters
+
     List<Job> findByStatus(JobStatus status);
 
     List<Job> findByPriority(JobPriority priority);
@@ -68,6 +70,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     List<Job> findByType(JobType type);
 
     List<Job> findByScheduleType(ScheduleType scheduleType);
+
+    // Combined filters
 
     List<Job> findByStatusAndPriority(
             JobStatus status,
@@ -88,6 +92,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             JobPriority priority,
             JobType type
     );
+
+    // Pagination
 
     Page<Job> findAll(Pageable pageable);
 
@@ -111,6 +117,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable
     );
 
+    // Pagination + combined filters
+
     Page<Job> findByStatusAndPriority(
             JobStatus status,
             JobPriority priority,
@@ -132,6 +140,45 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     Page<Job> findByPriorityAndType(
             JobPriority priority,
             JobType type,
+            Pageable pageable
+    );
+
+    // Search by job name
+
+    Page<Job> findByNameContainingIgnoreCase(
+            String name,
+            Pageable pageable
+    );
+
+    // Search + status
+
+    Page<Job> findByNameContainingIgnoreCaseAndStatus(
+            String name,
+            JobStatus status,
+            Pageable pageable
+    );
+
+    // Search + priority
+
+    Page<Job> findByNameContainingIgnoreCaseAndPriority(
+            String name,
+            JobPriority priority,
+            Pageable pageable
+    );
+
+    // Search + type
+
+    Page<Job> findByNameContainingIgnoreCaseAndType(
+            String name,
+            JobType type,
+            Pageable pageable
+    );
+
+    // Search + schedule type
+
+    Page<Job> findByNameContainingIgnoreCaseAndScheduleType(
+            String name,
+            ScheduleType scheduleType,
             Pageable pageable
     );
 }

@@ -85,6 +85,7 @@ public class JobService {
     }
 
     public Page<JobResponse> getAllJobs(
+            String search,
             JobStatus status,
             JobPriority priority,
             JobType type,
@@ -93,69 +94,127 @@ public class JobService {
 
         Page<Job> jobs;
 
-        if (status != null && priority != null) {
+        /*
+         * Search + filters
+         */
+        if (search != null && !search.isBlank()) {
 
-            jobs = jobRepository.findByStatusAndPriority(
-                    status,
-                    priority,
-                    pageable
-            );
+            String searchTerm = search.trim();
 
-        } else if (status != null && type != null) {
+            if (status != null) {
 
-            jobs = jobRepository.findByStatusAndType(
-                    status,
-                    type,
-                    pageable
-            );
+                jobs = jobRepository
+                        .findByNameContainingIgnoreCaseAndStatus(
+                                searchTerm,
+                                status,
+                                pageable
+                        );
 
-        } else if (status != null && scheduleType != null) {
+            } else if (priority != null) {
 
-            jobs = jobRepository.findByStatusAndScheduleType(
-                    status,
-                    scheduleType,
-                    pageable
-            );
+                jobs = jobRepository
+                        .findByNameContainingIgnoreCaseAndPriority(
+                                searchTerm,
+                                priority,
+                                pageable
+                        );
 
-        } else if (priority != null && type != null) {
+            } else if (type != null) {
 
-            jobs = jobRepository.findByPriorityAndType(
-                    priority,
-                    type,
-                    pageable
-            );
+                jobs = jobRepository
+                        .findByNameContainingIgnoreCaseAndType(
+                                searchTerm,
+                                type,
+                                pageable
+                        );
 
-        } else if (status != null) {
+            } else if (scheduleType != null) {
 
-            jobs = jobRepository.findByStatus(
-                    status,
-                    pageable
-            );
+                jobs = jobRepository
+                        .findByNameContainingIgnoreCaseAndScheduleType(
+                                searchTerm,
+                                scheduleType,
+                                pageable
+                        );
 
-        } else if (priority != null) {
+            } else {
 
-            jobs = jobRepository.findByPriority(
-                    priority,
-                    pageable
-            );
-
-        } else if (type != null) {
-
-            jobs = jobRepository.findByType(
-                    type,
-                    pageable
-            );
-
-        } else if (scheduleType != null) {
-
-            jobs = jobRepository.findByScheduleType(
-                    scheduleType,
-                    pageable
-            );
+                jobs = jobRepository
+                        .findByNameContainingIgnoreCase(
+                                searchTerm,
+                                pageable
+                        );
+            }
 
         } else {
 
-            jobs = jobRepository.findAll(pageable);
+            /*
+             * Existing filters
+             */
+            if (status != null && priority != null) {
+
+                jobs = jobRepository.findByStatusAndPriority(
+                        status,
+                        priority,
+                        pageable
+                );
+
+            } else if (status != null && type != null) {
+
+                jobs = jobRepository.findByStatusAndType(
+                        status,
+                        type,
+                        pageable
+                );
+
+            } else if (status != null && scheduleType != null) {
+
+                jobs = jobRepository.findByStatusAndScheduleType(
+                        status,
+                        scheduleType,
+                        pageable
+                );
+
+            } else if (priority != null && type != null) {
+
+                jobs = jobRepository.findByPriorityAndType(
+                        priority,
+                        type,
+                        pageable
+                );
+
+            } else if (status != null) {
+
+                jobs = jobRepository.findByStatus(
+                        status,
+                        pageable
+                );
+
+            } else if (priority != null) {
+
+                jobs = jobRepository.findByPriority(
+                        priority,
+                        pageable
+                );
+
+            } else if (type != null) {
+
+                jobs = jobRepository.findByType(
+                        type,
+                        pageable
+                );
+
+            } else if (scheduleType != null) {
+
+                jobs = jobRepository.findByScheduleType(
+                        scheduleType,
+                        pageable
+                );
+
+            } else {
+
+                jobs = jobRepository.findAll(pageable);
+            }
         }
 
         return jobs.map(this::toResponse);

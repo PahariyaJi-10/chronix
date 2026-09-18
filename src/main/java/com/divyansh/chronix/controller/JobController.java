@@ -32,15 +32,24 @@ public class JobController {
         return jobService.createJob(request);
     }
 
-    // Get Jobs with Filtering, Pagination and Sorting
+    // Get Jobs with Search, Filtering, Pagination and Sorting
     @GetMapping
     public Page<JobResponse> getAllJobs(
+
+            // Search by job name
+            @RequestParam(required = false) String search,
+
+            // Filters
             @RequestParam(required = false) JobStatus status,
             @RequestParam(required = false) JobPriority priority,
             @RequestParam(required = false) JobType type,
             @RequestParam(required = false) ScheduleType scheduleType,
+
+            // Pagination
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+
+            // Sorting
             @RequestParam(defaultValue = "id") String sortBy,
             @RequestParam(defaultValue = "asc") String direction) {
 
@@ -78,6 +87,7 @@ public class JobController {
                 );
 
         return jobService.getAllJobs(
+                search,
                 status,
                 priority,
                 type,
