@@ -1,5 +1,6 @@
 package com.divyansh.chronix.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -11,14 +12,25 @@ import java.util.concurrent.Executor;
 @EnableAsync
 public class AsyncConfig {
 
+    @Value("${chronix.executor.core-pool-size}")
+    private int corePoolSize;
+
+    @Value("${chronix.executor.max-pool-size}")
+    private int maxPoolSize;
+
+    @Value("${chronix.executor.queue-capacity}")
+    private int queueCapacity;
+
     @Bean(name = "chronixTaskExecutor")
     public Executor chronixTaskExecutor() {
 
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        ThreadPoolTaskExecutor executor =
+                new ThreadPoolTaskExecutor();
 
-        executor.setCorePoolSize(3);
-        executor.setMaxPoolSize(5);
-        executor.setQueueCapacity(100);
+        executor.setCorePoolSize(corePoolSize);
+        executor.setMaxPoolSize(maxPoolSize);
+        executor.setQueueCapacity(queueCapacity);
+
         executor.setThreadNamePrefix("chronix-worker-");
 
         executor.initialize();
