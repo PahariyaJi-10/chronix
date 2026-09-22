@@ -10,11 +10,18 @@ import com.divyansh.chronix.repository.DeadLetterJobRepository;
 import com.divyansh.chronix.repository.JobExecutionRepository;
 import com.divyansh.chronix.repository.JobRepository;
 import com.divyansh.chronix.service.JobAuditLogService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Service
 public class JobExecutor {
@@ -25,6 +32,12 @@ public class JobExecutor {
     private final JobExecutionRepository jobExecutionRepository;
     private final DeadLetterJobRepository deadLetterJobRepository;
     private final JobAuditLogService jobAuditLogService;
+
+    @Value("${chronix.executor.job-timeout-seconds}")
+    private long timeoutSeconds;
+
+    private final ExecutorService jobWorkExecutor =
+            Executors.newCachedThreadPool();
 
     public JobExecutor(
             JobRepository jobRepository,
@@ -64,15 +77,50 @@ public class JobExecutor {
                         + " | Thread: " + Thread.currentThread().getName()
         );
 
+        Future<?> future = null;
+
         try {
 
-            Thread.sleep(5000);
+            future = jobWorkExecutor.submit(() -> {
 
-            if (job.getPayload() != null
-                    && job.getPayload().equalsIgnoreCase("FAIL")) {
+                try {
 
-                throw new RuntimeException("Simulated job failure");
-            }
+                    /*
+                     * Simulated job processing.
+                     *
+                     * This represents the actual work performed
+                     * by a Chronix job.
+                     */
+                    Thread.sleep(5000);
+
+                    if (job.getPayload() != null
+                            && job.getPayload().equalsIgnoreCase("FAIL")) {
+
+                        throw new RuntimeException(
+                                "Simulated job failure"
+                        );
+                    }
+
+                } catch (InterruptedException e) {
+
+                    Thread.currentThread().interrupt();
+
+                    throw new RuntimeException(
+                            "Job execution interrupted",
+                            e
+                    );
+                }
+            });
+
+            /*
+             * Wait for the actual job work to finish.
+             * If it exceeds the configured timeout,
+             * TimeoutException is thrown.
+             */
+            future.get(
+                    timeoutSeconds,
+                    TimeUnit.SECONDS
+            );
 
             execution.setStatus(JobStatus.COMPLETED);
 
@@ -83,81 +131,68 @@ public class JobExecutor {
             );
 
             System.out.println(
-                    "Completed Job: " + job.getName()
+                    "Completed Job: "
+                            + job.getName()
             );
 
             scheduleNextExecution(job);
 
-        } catch (Exception e) {
+        } catch (TimeoutException e) {
 
-            int retries = job.getRetryCount() + 1;
+            if (future != null) {
+                future.cancel(true);
+            }
 
-            job.setRetryCount(retries);
-
-            execution.setStatus(JobStatus.FAILED);
-            execution.setErrorMessage(e.getMessage());
-
-            jobAuditLogService.log(
+            handleFailure(
                     job,
-                    JobAuditAction.JOB_FAILED,
-                    "Job execution failed. Attempt: "
-                            + retries
-                            + " | Error: "
-                            + e.getMessage()
+                    execution,
+                    "Job execution timed out after "
+                            + timeoutSeconds
+                            + " seconds"
             );
 
-            if (retries < MAX_RETRIES) {
+        } catch (ExecutionException e) {
 
-                job.setStatus(JobStatus.PENDING);
+            Throwable cause = e.getCause();
 
-                System.out.println(
-                        "Retry " + retries
-                                + " scheduled for: "
-                                + job.getName()
-                );
+            String errorMessage =
+                    cause != null && cause.getMessage() != null
+                            ? cause.getMessage()
+                            : "Job execution failed";
 
-            } else {
+            handleFailure(
+                    job,
+                    execution,
+                    errorMessage
+            );
 
-                job.setStatus(JobStatus.FAILED);
+        } catch (InterruptedException e) {
 
-                System.out.println(
-                        "Job permanently failed: "
-                                + job.getName()
-                );
+            Thread.currentThread().interrupt();
 
-                if (!deadLetterJobRepository.existsByJobId(job.getId())) {
+            handleFailure(
+                    job,
+                    execution,
+                    "Job executor thread was interrupted"
+            );
 
-                    DeadLetterJob deadLetterJob = new DeadLetterJob();
+        } catch (Exception e) {
 
-                    deadLetterJob.setJob(job);
-                    deadLetterJob.setJobName(job.getName());
-                    deadLetterJob.setAttemptCount(retries);
-                    deadLetterJob.setErrorMessage(e.getMessage());
-                    deadLetterJob.setPayload(job.getPayload());
-                    deadLetterJob.setFailedAt(LocalDateTime.now());
-
-                    deadLetterJobRepository.save(deadLetterJob);
-
-                    jobAuditLogService.log(
-                            job,
-                            JobAuditAction.JOB_MOVED_TO_DLQ,
-                            "Job moved to Dead-Letter Queue after "
-                                    + retries
-                                    + " failed attempts"
-                    );
-
-                    System.out.println(
-                            "Job moved to Dead-Letter Queue: "
-                                    + job.getName()
-                    );
-                }
-            }
+            handleFailure(
+                    job,
+                    execution,
+                    e.getMessage() != null
+                            ? e.getMessage()
+                            : "Unexpected job execution error"
+            );
 
         } finally {
 
-            LocalDateTime finishedAt = LocalDateTime.now();
+            LocalDateTime finishedAt =
+                    LocalDateTime.now();
 
             execution.setFinishedAt(finishedAt);
+
             job.setUpdatedAt(finishedAt);
 
             jobRepository.save(job);
@@ -165,9 +200,87 @@ public class JobExecutor {
         }
     }
 
+    private void handleFailure(
+            Job job,
+            JobExecution execution,
+            String errorMessage) {
+
+        int retries =
+                job.getRetryCount() + 1;
+
+        job.setRetryCount(retries);
+
+        execution.setStatus(JobStatus.FAILED);
+        execution.setErrorMessage(errorMessage);
+
+        jobAuditLogService.log(
+                job,
+                JobAuditAction.JOB_FAILED,
+                "Job execution failed. Attempt: "
+                        + retries
+                        + " | Error: "
+                        + errorMessage
+        );
+
+        if (retries < MAX_RETRIES) {
+
+            job.setStatus(JobStatus.PENDING);
+
+            System.out.println(
+                    "Retry "
+                            + retries
+                            + " scheduled for: "
+                            + job.getName()
+            );
+
+        } else {
+
+            job.setStatus(JobStatus.FAILED);
+
+            System.out.println(
+                    "Job permanently failed: "
+                            + job.getName()
+            );
+
+            if (!deadLetterJobRepository.existsByJobId(
+                    job.getId())) {
+
+                DeadLetterJob deadLetterJob =
+                        new DeadLetterJob();
+
+                deadLetterJob.setJob(job);
+                deadLetterJob.setJobName(job.getName());
+                deadLetterJob.setAttemptCount(retries);
+                deadLetterJob.setErrorMessage(errorMessage);
+                deadLetterJob.setPayload(job.getPayload());
+                deadLetterJob.setFailedAt(
+                        LocalDateTime.now()
+                );
+
+                deadLetterJobRepository.save(
+                        deadLetterJob
+                );
+
+                jobAuditLogService.log(
+                        job,
+                        JobAuditAction.JOB_MOVED_TO_DLQ,
+                        "Job moved to Dead-Letter Queue after "
+                                + retries
+                                + " failed attempts"
+                );
+
+                System.out.println(
+                        "Job moved to Dead-Letter Queue: "
+                                + job.getName()
+                );
+            }
+        }
+    }
+
     private void scheduleNextExecution(Job job) {
 
-        ScheduleType scheduleType = job.getScheduleType();
+        ScheduleType scheduleType =
+                job.getScheduleType();
 
         if (scheduleType == null
                 || scheduleType == ScheduleType.ONE_TIME) {

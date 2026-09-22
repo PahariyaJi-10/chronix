@@ -19,4 +19,5 @@ public interface JobExecutionRepository
 
     // Count executions by status
     long countByStatus(JobStatus status);
+    List<JobExecution> findByStatus(JobStatus status);
 }
