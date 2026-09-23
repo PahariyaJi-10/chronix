@@ -2,6 +2,8 @@ package com.divyansh.chronix.dto;
 
 public class ExecutionMetricsResponse {
 
+    private Long jobId;
+
     private long totalExecutions;
     private long successfulExecutions;
     private long failedExecutions;
@@ -16,6 +18,7 @@ public class ExecutionMetricsResponse {
     public ExecutionMetricsResponse() {
     }
 
+    // Constructor for global metrics
     public ExecutionMetricsResponse(
             long totalExecutions,
             long successfulExecutions,
@@ -34,6 +37,33 @@ public class ExecutionMetricsResponse {
         this.failureRate = failureRate;
         this.totalExecutionTimeMs = totalExecutionTimeMs;
         this.averageExecutionTimeMs = averageExecutionTimeMs;
+    }
+
+    // Constructor for per-job metrics
+    public ExecutionMetricsResponse(
+            Long jobId,
+            long totalExecutions,
+            long successfulExecutions,
+            long failedExecutions,
+            long runningExecutions,
+            double successRate,
+            double failureRate,
+            long totalExecutionTimeMs,
+            double averageExecutionTimeMs) {
+
+        this.jobId = jobId;
+        this.totalExecutions = totalExecutions;
+        this.successfulExecutions = successfulExecutions;
+        this.failedExecutions = failedExecutions;
+        this.runningExecutions = runningExecutions;
+        this.successRate = successRate;
+        this.failureRate = failureRate;
+        this.totalExecutionTimeMs = totalExecutionTimeMs;
+        this.averageExecutionTimeMs = averageExecutionTimeMs;
+    }
+
+    public Long getJobId() {
+        return jobId;
     }
 
     public long getTotalExecutions() {

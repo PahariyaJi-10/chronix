@@ -54,7 +54,7 @@ public class JobExecutionService {
                 .collect(Collectors.toList());
     }
 
-    // Get execution statistics
+    // Get global execution statistics
     public ExecutionMetricsResponse getExecutionMetrics() {
 
         long totalExecutions =
@@ -121,6 +121,99 @@ public class JobExecutionService {
         }
 
         return new ExecutionMetricsResponse(
+                totalExecutions,
+                successfulExecutions,
+                failedExecutions,
+                runningExecutions,
+                successRate,
+                failureRate,
+                totalExecutionTimeMs,
+                averageExecutionTimeMs
+        );
+    }
+
+    // Get execution statistics for a specific job
+    public ExecutionMetricsResponse getExecutionMetricsByJobId(
+            Long jobId) {
+
+        if (!jobRepository.existsById(jobId)) {
+
+            throw new JobNotFoundException(
+                    "Job not found with id: " + jobId
+            );
+        }
+
+        List<JobExecution> executions =
+                jobExecutionRepository
+                        .findByJobIdOrderByStartedAtDesc(jobId);
+
+        long totalExecutions = executions.size();
+
+        long successfulExecutions =
+                executions.stream()
+                        .filter(execution ->
+                                execution.getStatus()
+                                        == JobStatus.COMPLETED)
+                        .count();
+
+        long failedExecutions =
+                executions.stream()
+                        .filter(execution ->
+                                execution.getStatus()
+                                        == JobStatus.FAILED)
+                        .count();
+
+        long runningExecutions =
+                executions.stream()
+                        .filter(execution ->
+                                execution.getStatus()
+                                        == JobStatus.RUNNING)
+                        .count();
+
+        double successRate = 0.0;
+        double failureRate = 0.0;
+
+        if (totalExecutions > 0) {
+
+            successRate =
+                    (successfulExecutions * 100.0)
+                            / totalExecutions;
+
+            failureRate =
+                    (failedExecutions * 100.0)
+                            / totalExecutions;
+        }
+
+        long totalExecutionTimeMs = 0;
+        long completedExecutionCount = 0;
+
+        for (JobExecution execution : executions) {
+
+            if (execution.getStartedAt() != null
+                    && execution.getFinishedAt() != null) {
+
+                long duration =
+                        Duration.between(
+                                execution.getStartedAt(),
+                                execution.getFinishedAt()
+                        ).toMillis();
+
+                totalExecutionTimeMs += duration;
+                completedExecutionCount++;
+            }
+        }
+
+        double averageExecutionTimeMs = 0.0;
+
+        if (completedExecutionCount > 0) {
+
+            averageExecutionTimeMs =
+                    (double) totalExecutionTimeMs
+                            / completedExecutionCount;
+        }
+
+        return new ExecutionMetricsResponse(
+                jobId,
                 totalExecutions,
                 successfulExecutions,
                 failedExecutions,

@@ -34,10 +34,19 @@ public class JobExecutionController {
         return jobExecutionService.getExecutionsByJobId(jobId);
     }
 
-    // Get execution statistics
+    // Get global execution statistics
     @GetMapping("/executions/metrics")
     public ExecutionMetricsResponse getExecutionMetrics() {
 
         return jobExecutionService.getExecutionMetrics();
+    }
+
+    // Get execution statistics for a specific job
+    @GetMapping("/jobs/{jobId}/executions/metrics")
+    public ExecutionMetricsResponse getExecutionMetricsByJobId(
+            @PathVariable Long jobId) {
+
+        return jobExecutionService
+                .getExecutionMetricsByJobId(jobId);
     }
 }
