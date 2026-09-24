@@ -4,6 +4,7 @@ import com.divyansh.chronix.entity.JobExecution;
 import com.divyansh.chronix.entity.JobStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface JobExecutionRepository
@@ -19,5 +20,12 @@ public interface JobExecutionRepository
 
     // Count executions by status
     long countByStatus(JobStatus status);
+
+    // Get executions by status
     List<JobExecution> findByStatus(JobStatus status);
+
+    // Get executions older than a specific date
+    List<JobExecution> findByFinishedAtBefore(
+            LocalDateTime cutoffDate
+    );
 }
