@@ -31,6 +31,10 @@ public class AsyncConfig {
 
         executor.setThreadNamePrefix("chronix-worker-");
 
+        // Graceful shutdown configuration
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(30);
+
         executor.initialize();
 
         return executor;
