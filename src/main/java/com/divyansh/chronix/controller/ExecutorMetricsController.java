@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/executor")
+@RequestMapping("/api/system")
 public class ExecutorMetricsController {
 
     private final ExecutorMetricsService executorMetricsService;
@@ -18,9 +18,9 @@ public class ExecutorMetricsController {
         this.executorMetricsService = executorMetricsService;
     }
 
-    @GetMapping("/metrics")
-    public ExecutorMetricsResponse getMetrics() {
+    @GetMapping("/executor")
+    public ExecutorMetricsResponse getExecutorMetrics() {
 
-        return executorMetricsService.getMetrics();
+        return executorMetricsService.getExecutorMetrics();
     }
 }

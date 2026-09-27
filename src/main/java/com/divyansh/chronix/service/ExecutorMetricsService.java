@@ -1,33 +1,38 @@
 package com.divyansh.chronix.service;
 
 import com.divyansh.chronix.dto.ExecutorMetricsResponse;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ExecutorMetricsService {
 
-    private final ThreadPoolTaskExecutor executor;
+    private final ThreadPoolTaskExecutor taskExecutor;
 
     public ExecutorMetricsService(
-            ThreadPoolTaskExecutor executor) {
+            @Qualifier("chronixTaskExecutor")
+            ThreadPoolTaskExecutor taskExecutor) {
 
-        this.executor = executor;
+        this.taskExecutor = taskExecutor;
     }
 
-    public ExecutorMetricsResponse getMetrics() {
+    public ExecutorMetricsResponse getExecutorMetrics() {
 
         return new ExecutorMetricsResponse(
-                executor.getCorePoolSize(),
-                executor.getMaxPoolSize(),
-                executor.getPoolSize(),
-                executor.getActiveCount(),
-                executor.getThreadPoolExecutor()
+                taskExecutor.getCorePoolSize(),
+                taskExecutor.getMaxPoolSize(),
+                taskExecutor.getThreadPoolExecutor()
                         .getQueue()
-                        .size(),
-                executor.getThreadPoolExecutor()
-                        .getCompletedTaskCount(),
-                executor.getQueueCapacity()
+                        .remainingCapacity()
+                        + taskExecutor.getThreadPoolExecutor()
+                                .getQueue()
+                                .size(),
+                taskExecutor.getActiveCount(),
+                taskExecutor.getPoolSize(),
+                taskExecutor.getThreadPoolExecutor()
+                        .getQueue()
+                        .size()
         );
     }
 }

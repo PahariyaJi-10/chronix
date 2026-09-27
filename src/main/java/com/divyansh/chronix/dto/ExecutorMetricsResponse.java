@@ -4,31 +4,26 @@ public class ExecutorMetricsResponse {
 
     private int corePoolSize;
     private int maxPoolSize;
-    private int currentPoolSize;
-    private int activeWorkerCount;
-    private int queuedTasks;
-    private long completedTasks;
     private int queueCapacity;
 
-    public ExecutorMetricsResponse() {
-    }
+    private int activeThreads;
+    private int poolSize;
+    private int queueSize;
 
     public ExecutorMetricsResponse(
             int corePoolSize,
             int maxPoolSize,
-            int currentPoolSize,
-            int activeWorkerCount,
-            int queuedTasks,
-            long completedTasks,
-            int queueCapacity) {
+            int queueCapacity,
+            int activeThreads,
+            int poolSize,
+            int queueSize) {
 
         this.corePoolSize = corePoolSize;
         this.maxPoolSize = maxPoolSize;
-        this.currentPoolSize = currentPoolSize;
-        this.activeWorkerCount = activeWorkerCount;
-        this.queuedTasks = queuedTasks;
-        this.completedTasks = completedTasks;
         this.queueCapacity = queueCapacity;
+        this.activeThreads = activeThreads;
+        this.poolSize = poolSize;
+        this.queueSize = queueSize;
     }
 
     public int getCorePoolSize() {
@@ -39,23 +34,19 @@ public class ExecutorMetricsResponse {
         return maxPoolSize;
     }
 
-    public int getCurrentPoolSize() {
-        return currentPoolSize;
-    }
-
-    public int getActiveWorkerCount() {
-        return activeWorkerCount;
-    }
-
-    public int getQueuedTasks() {
-        return queuedTasks;
-    }
-
-    public long getCompletedTasks() {
-        return completedTasks;
-    }
-
     public int getQueueCapacity() {
         return queueCapacity;
+    }
+
+    public int getActiveThreads() {
+        return activeThreads;
+    }
+
+    public int getPoolSize() {
+        return poolSize;
+    }
+
+    public int getQueueSize() {
+        return queueSize;
     }
 }
