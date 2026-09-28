@@ -22,17 +22,23 @@ public class ExecutorMetricsService {
         return new ExecutorMetricsResponse(
                 taskExecutor.getCorePoolSize(),
                 taskExecutor.getMaxPoolSize(),
+
                 taskExecutor.getThreadPoolExecutor()
                         .getQueue()
                         .remainingCapacity()
                         + taskExecutor.getThreadPoolExecutor()
                                 .getQueue()
                                 .size(),
+
                 taskExecutor.getActiveCount(),
                 taskExecutor.getPoolSize(),
+
                 taskExecutor.getThreadPoolExecutor()
                         .getQueue()
-                        .size()
+                        .size(),
+
+                taskExecutor.getMaxPoolSize()
+                        - taskExecutor.getActiveCount()
         );
     }
 }

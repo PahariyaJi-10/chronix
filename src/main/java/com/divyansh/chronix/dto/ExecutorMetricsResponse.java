@@ -9,6 +9,7 @@ public class ExecutorMetricsResponse {
     private int activeThreads;
     private int poolSize;
     private int queueSize;
+    private int availableThreads;
 
     public ExecutorMetricsResponse(
             int corePoolSize,
@@ -16,7 +17,8 @@ public class ExecutorMetricsResponse {
             int queueCapacity,
             int activeThreads,
             int poolSize,
-            int queueSize) {
+            int queueSize,
+            int availableThreads) {
 
         this.corePoolSize = corePoolSize;
         this.maxPoolSize = maxPoolSize;
@@ -24,6 +26,7 @@ public class ExecutorMetricsResponse {
         this.activeThreads = activeThreads;
         this.poolSize = poolSize;
         this.queueSize = queueSize;
+        this.availableThreads = availableThreads;
     }
 
     public int getCorePoolSize() {
@@ -48,5 +51,9 @@ public class ExecutorMetricsResponse {
 
     public int getQueueSize() {
         return queueSize;
+    }
+
+    public int getAvailableThreads() {
+        return availableThreads;
     }
 }

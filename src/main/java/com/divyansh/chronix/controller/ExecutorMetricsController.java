@@ -18,6 +18,7 @@ public class ExecutorMetricsController {
         this.executorMetricsService = executorMetricsService;
     }
 
+    // Get live executor metrics
     @GetMapping("/executor")
     public ExecutorMetricsResponse getExecutorMetrics() {
 
