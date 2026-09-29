@@ -34,6 +34,8 @@ public class CreateJobRequest {
 
     private String cronExpression;
 
+    private String tags;
+
     public CreateJobRequest() {
     }
 
@@ -99,5 +101,13 @@ public class CreateJobRequest {
 
     public void setCronExpression(String cronExpression) {
         this.cronExpression = cronExpression;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 }

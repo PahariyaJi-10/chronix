@@ -15,6 +15,7 @@ public class JobResponse {
     private Long dependsOnJobId;
     private ScheduleType scheduleType;
     private String cronExpression;
+    private String tags;
 
     public JobResponse() {
     }
@@ -27,7 +28,8 @@ public class JobResponse {
             JobPriority priority,
             Long dependsOnJobId,
             ScheduleType scheduleType,
-            String cronExpression) {
+            String cronExpression,
+            String tags) {
 
         this.id = id;
         this.name = name;
@@ -37,6 +39,7 @@ public class JobResponse {
         this.dependsOnJobId = dependsOnJobId;
         this.scheduleType = scheduleType;
         this.cronExpression = cronExpression;
+        this.tags = tags;
     }
 
     public Long getId() {
@@ -69,5 +72,9 @@ public class JobResponse {
 
     public String getCronExpression() {
         return cronExpression;
+    }
+
+    public String getTags() {
+        return tags;
     }
 }

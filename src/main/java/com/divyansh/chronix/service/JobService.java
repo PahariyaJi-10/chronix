@@ -50,6 +50,9 @@ public class JobService {
         job.setScheduleType(request.getScheduleType());
         job.setCronExpression(request.getCronExpression());
 
+        // Set job tags
+        job.setTags(request.getTags());
+
         if (request.getDependsOnJobId() != null) {
 
             Job dependencyJob =
@@ -246,6 +249,9 @@ public class JobService {
 
         job.setScheduleType(request.getScheduleType());
         job.setCronExpression(request.getCronExpression());
+
+        // Update job tags
+        job.setTags(request.getTags());
 
         if (request.getDependsOnJobId() != null) {
 
@@ -497,7 +503,8 @@ public class JobService {
                         ? job.getDependsOn().getId()
                         : null,
                 job.getScheduleType(),
-                job.getCronExpression()
+                job.getCronExpression(),
+                job.getTags()
         );
     }
 }

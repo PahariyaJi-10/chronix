@@ -43,6 +43,10 @@ public class Job {
     @JoinColumn(name = "depends_on_job_id")
     private Job dependsOn;
 
+    // Job tags
+    @Column(columnDefinition = "TEXT")
+    private String tags;
+
     public Job() {
     }
 
@@ -148,5 +152,13 @@ public class Job {
 
     public void setDependsOn(Job dependsOn) {
         this.dependsOn = dependsOn;
+    }
+
+    public String getTags() {
+        return tags;
+    }
+
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 }
