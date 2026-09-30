@@ -89,6 +89,7 @@ public class JobService {
 
     public Page<JobResponse> getAllJobs(
             String search,
+            String tag,
             JobStatus status,
             JobPriority priority,
             JobType type,
@@ -98,9 +99,19 @@ public class JobService {
         Page<Job> jobs;
 
         /*
+         * Tag filter
+         */
+        if (tag != null && !tag.isBlank()) {
+
+            jobs = jobRepository.findByTagsContainingIgnoreCase(
+                    tag.trim(),
+                    pageable
+            );
+
+        /*
          * Search + filters
          */
-        if (search != null && !search.isBlank()) {
+        } else if (search != null && !search.isBlank()) {
 
             String searchTerm = search.trim();
 

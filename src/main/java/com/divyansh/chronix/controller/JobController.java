@@ -32,12 +32,15 @@ public class JobController {
         return jobService.createJob(request);
     }
 
-    // Get Jobs with Search, Filtering, Pagination and Sorting
+    // Get Jobs with Search, Tag Filtering, Pagination and Sorting
     @GetMapping
     public Page<JobResponse> getAllJobs(
 
             // Search by job name
             @RequestParam(required = false) String search,
+
+            // Filter by job tag
+            @RequestParam(required = false) String tag,
 
             // Filters
             @RequestParam(required = false) JobStatus status,
@@ -88,6 +91,7 @@ public class JobController {
 
         return jobService.getAllJobs(
                 search,
+                tag,
                 status,
                 priority,
                 type,

@@ -181,4 +181,11 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             ScheduleType scheduleType,
             Pageable pageable
     );
+
+    // Search by job tag
+
+    Page<Job> findByTagsContainingIgnoreCase(
+            String tag,
+            Pageable pageable
+    );
 }
