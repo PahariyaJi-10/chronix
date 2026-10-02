@@ -96,140 +96,25 @@ public class JobService {
             ScheduleType scheduleType,
             Pageable pageable) {
 
-        Page<Job> jobs;
+        String searchTerm =
+                search != null && !search.isBlank()
+                        ? search.trim()
+                        : null;
 
-        /*
-         * Tag filter
-         */
-        if (tag != null && !tag.isBlank()) {
+        String tagTerm =
+                tag != null && !tag.isBlank()
+                        ? tag.trim()
+                        : null;
 
-            jobs = jobRepository.findByTagsContainingIgnoreCase(
-                    tag.trim(),
-                    pageable
-            );
-
-        /*
-         * Search + filters
-         */
-        } else if (search != null && !search.isBlank()) {
-
-            String searchTerm = search.trim();
-
-            if (status != null) {
-
-                jobs = jobRepository
-                        .findByNameContainingIgnoreCaseAndStatus(
-                                searchTerm,
-                                status,
-                                pageable
-                        );
-
-            } else if (priority != null) {
-
-                jobs = jobRepository
-                        .findByNameContainingIgnoreCaseAndPriority(
-                                searchTerm,
-                                priority,
-                                pageable
-                        );
-
-            } else if (type != null) {
-
-                jobs = jobRepository
-                        .findByNameContainingIgnoreCaseAndType(
-                                searchTerm,
-                                type,
-                                pageable
-                        );
-
-            } else if (scheduleType != null) {
-
-                jobs = jobRepository
-                        .findByNameContainingIgnoreCaseAndScheduleType(
-                                searchTerm,
-                                scheduleType,
-                                pageable
-                        );
-
-            } else {
-
-                jobs = jobRepository
-                        .findByNameContainingIgnoreCase(
-                                searchTerm,
-                                pageable
-                        );
-            }
-
-        } else {
-
-            /*
-             * Existing filters
-             */
-            if (status != null && priority != null) {
-
-                jobs = jobRepository.findByStatusAndPriority(
-                        status,
-                        priority,
-                        pageable
-                );
-
-            } else if (status != null && type != null) {
-
-                jobs = jobRepository.findByStatusAndType(
-                        status,
-                        type,
-                        pageable
-                );
-
-            } else if (status != null && scheduleType != null) {
-
-                jobs = jobRepository.findByStatusAndScheduleType(
-                        status,
-                        scheduleType,
-                        pageable
-                );
-
-            } else if (priority != null && type != null) {
-
-                jobs = jobRepository.findByPriorityAndType(
-                        priority,
-                        type,
-                        pageable
-                );
-
-            } else if (status != null) {
-
-                jobs = jobRepository.findByStatus(
-                        status,
-                        pageable
-                );
-
-            } else if (priority != null) {
-
-                jobs = jobRepository.findByPriority(
-                        priority,
-                        pageable
-                );
-
-            } else if (type != null) {
-
-                jobs = jobRepository.findByType(
-                        type,
-                        pageable
-                );
-
-            } else if (scheduleType != null) {
-
-                jobs = jobRepository.findByScheduleType(
-                        scheduleType,
-                        pageable
-                );
-
-            } else {
-
-                jobs = jobRepository.findAll(pageable);
-            }
-        }
+        Page<Job> jobs = jobRepository.findJobsWithFilters(
+                searchTerm,
+                tagTerm,
+                status,
+                priority,
+                type,
+                scheduleType,
+                pageable
+        );
 
         return jobs.map(this::toResponse);
     }

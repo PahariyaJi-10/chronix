@@ -188,4 +188,59 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             String tag,
             Pageable pageable
     );
+
+    // Dynamic filtering:
+    // Search + Tag + Status + Priority + Type + Schedule Type
+    //
+    // Any parameter can be null, meaning that filter is ignored.
+
+    @Query("""
+            SELECT j
+            FROM Job j
+            WHERE
+                (
+                    :search IS NULL
+                    OR LOWER(j.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                )
+                AND
+                (
+                    :tag IS NULL
+                    OR LOWER(
+                        CONCAT(
+                            ',',
+                            COALESCE(j.tags, ''),
+                            ','
+                        )
+                    ) LIKE CONCAT('%,', LOWER(:tag), ',%')
+                )
+                AND
+                (
+                    :status IS NULL
+                    OR j.status = :status
+                )
+                AND
+                (
+                    :priority IS NULL
+                    OR j.priority = :priority
+                )
+                AND
+                (
+                    :type IS NULL
+                    OR j.type = :type
+                )
+                AND
+                (
+                    :scheduleType IS NULL
+                    OR j.scheduleType = :scheduleType
+                )
+            """)
+    Page<Job> findJobsWithFilters(
+            @Param("search") String search,
+            @Param("tag") String tag,
+            @Param("status") JobStatus status,
+            @Param("priority") JobPriority priority,
+            @Param("type") JobType type,
+            @Param("scheduleType") ScheduleType scheduleType,
+            Pageable pageable
+    );
 }
