@@ -2,6 +2,8 @@ package com.divyansh.chronix.service;
 
 import com.divyansh.chronix.dto.ExecutionMetricsResponse;
 import com.divyansh.chronix.dto.JobExecutionResponse;
+import com.divyansh.chronix.dto.JobStatisticsResponse;
+import com.divyansh.chronix.entity.Job;
 import com.divyansh.chronix.entity.JobExecution;
 import com.divyansh.chronix.entity.JobStatus;
 import com.divyansh.chronix.exception.JobNotFoundException;
@@ -222,6 +224,61 @@ public class JobExecutionService {
                 failureRate,
                 totalExecutionTimeMs,
                 averageExecutionTimeMs
+        );
+    }
+
+    // Get simplified statistics for a specific job
+    public JobStatisticsResponse getJobStatistics(Long jobId) {
+
+        Job job = jobRepository.findById(jobId)
+                .orElseThrow(() ->
+                        new JobNotFoundException(
+                                "Job not found with id: " + jobId
+                        )
+                );
+
+        List<JobExecution> executions =
+                jobExecutionRepository
+                        .findByJobIdOrderByStartedAtDesc(jobId);
+
+        long totalExecutions = executions.size();
+
+        long successfulExecutions =
+                executions.stream()
+                        .filter(execution ->
+                                execution.getStatus()
+                                        == JobStatus.COMPLETED)
+                        .count();
+
+        long failedExecutions =
+                executions.stream()
+                        .filter(execution ->
+                                execution.getStatus()
+                                        == JobStatus.FAILED)
+                        .count();
+
+        double successRate = 0.0;
+        double failureRate = 0.0;
+
+        if (totalExecutions > 0) {
+
+            successRate =
+                    (successfulExecutions * 100.0)
+                            / totalExecutions;
+
+            failureRate =
+                    (failedExecutions * 100.0)
+                            / totalExecutions;
+        }
+
+        return new JobStatisticsResponse(
+                job.getId(),
+                job.getName(),
+                totalExecutions,
+                successfulExecutions,
+                failedExecutions,
+                successRate,
+                failureRate
         );
     }
 

@@ -2,6 +2,7 @@ package com.divyansh.chronix.controller;
 
 import com.divyansh.chronix.dto.ExecutionMetricsResponse;
 import com.divyansh.chronix.dto.JobExecutionResponse;
+import com.divyansh.chronix.dto.JobStatisticsResponse;
 import com.divyansh.chronix.service.JobExecutionService;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,5 +49,14 @@ public class JobExecutionController {
 
         return jobExecutionService
                 .getExecutionMetricsByJobId(jobId);
+    }
+
+    // Get simplified statistics for a specific job
+    @GetMapping("/jobs/{jobId}/statistics")
+    public JobStatisticsResponse getJobStatistics(
+            @PathVariable Long jobId) {
+
+        return jobExecutionService
+                .getJobStatistics(jobId);
     }
 }

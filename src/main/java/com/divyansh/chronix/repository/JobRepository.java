@@ -19,11 +19,13 @@ import java.util.List;
 
 public interface JobRepository extends JpaRepository<Job, Long> {
 
+    // Find jobs by status and scheduled time
     List<Job> findByStatusAndScheduledAtLessThanEqual(
             JobStatus status,
             LocalDateTime scheduledAt
     );
 
+    // Find due jobs with priority-based ordering and row locking
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT j
@@ -44,6 +46,7 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             @Param("scheduledAt") LocalDateTime scheduledAt
     );
 
+    // Claim a job for execution
     @Modifying
     @Query("""
             UPDATE Job j
@@ -59,9 +62,12 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             @Param("updatedAt") LocalDateTime updatedAt
     );
 
+    // Count jobs by status
     long countByStatus(JobStatus status);
 
-    // Basic filters
+    // =========================================================
+    // Basic Filters
+    // =========================================================
 
     List<Job> findByStatus(JobStatus status);
 
@@ -71,7 +77,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
 
     List<Job> findByScheduleType(ScheduleType scheduleType);
 
-    // Combined filters
+    // =========================================================
+    // Combined Filters
+    // =========================================================
 
     List<Job> findByStatusAndPriority(
             JobStatus status,
@@ -93,7 +101,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             JobType type
     );
 
+    // =========================================================
     // Pagination
+    // =========================================================
 
     Page<Job> findAll(Pageable pageable);
 
@@ -117,7 +127,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable
     );
 
-    // Pagination + combined filters
+    // =========================================================
+    // Pagination + Combined Filters
+    // =========================================================
 
     Page<Job> findByStatusAndPriority(
             JobStatus status,
@@ -143,14 +155,18 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable
     );
 
-    // Search by job name
+    // =========================================================
+    // Search by Job Name
+    // =========================================================
 
     Page<Job> findByNameContainingIgnoreCase(
             String name,
             Pageable pageable
     );
 
-    // Search + status
+    // =========================================================
+    // Search + Status
+    // =========================================================
 
     Page<Job> findByNameContainingIgnoreCaseAndStatus(
             String name,
@@ -158,7 +174,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable
     );
 
-    // Search + priority
+    // =========================================================
+    // Search + Priority
+    // =========================================================
 
     Page<Job> findByNameContainingIgnoreCaseAndPriority(
             String name,
@@ -166,7 +184,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable
     );
 
-    // Search + type
+    // =========================================================
+    // Search + Type
+    // =========================================================
 
     Page<Job> findByNameContainingIgnoreCaseAndType(
             String name,
@@ -174,7 +194,9 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable
     );
 
-    // Search + schedule type
+    // =========================================================
+    // Search + Schedule Type
+    // =========================================================
 
     Page<Job> findByNameContainingIgnoreCaseAndScheduleType(
             String name,
@@ -182,53 +204,78 @@ public interface JobRepository extends JpaRepository<Job, Long> {
             Pageable pageable
     );
 
-    // Search by job tag
+    // =========================================================
+    // Search by Job Tag
+    // =========================================================
 
     Page<Job> findByTagsContainingIgnoreCase(
             String tag,
             Pageable pageable
     );
 
-    // Dynamic filtering:
+    // =========================================================
+    // Dynamic Combined Filtering
+    //
     // Search + Tag + Status + Priority + Type + Schedule Type
     //
-    // Any parameter can be null, meaning that filter is ignored.
+    // Search and tag are converted to empty strings when null.
+    // This avoids PostgreSQL's "lower(bytea)" error caused by
+    // untyped NULL parameters.
+    // =========================================================
 
     @Query("""
             SELECT j
             FROM Job j
             WHERE
-                (
-                    :search IS NULL
-                    OR LOWER(j.name) LIKE LOWER(CONCAT('%', :search, '%'))
+                LOWER(j.name) LIKE
+                LOWER(
+                    CONCAT(
+                        '%',
+                        COALESCE(:search, ''),
+                        '%'
+                    )
                 )
+
                 AND
-                (
-                    :tag IS NULL
-                    OR LOWER(
-                        CONCAT(
-                            ',',
-                            COALESCE(j.tags, ''),
-                            ','
-                        )
-                    ) LIKE CONCAT('%,', LOWER(:tag), ',%')
+
+                LOWER(
+                    CONCAT(
+                        ',',
+                        COALESCE(j.tags, ''),
+                        ','
+                    )
+                ) LIKE
+                CONCAT(
+                    '%,',
+                    LOWER(
+                        COALESCE(:tag, '')
+                    ),
+                    ',%'
                 )
+
                 AND
+
                 (
                     :status IS NULL
                     OR j.status = :status
                 )
+
                 AND
+
                 (
                     :priority IS NULL
                     OR j.priority = :priority
                 )
+
                 AND
+
                 (
                     :type IS NULL
                     OR j.type = :type
                 )
+
                 AND
+
                 (
                     :scheduleType IS NULL
                     OR j.scheduleType = :scheduleType
