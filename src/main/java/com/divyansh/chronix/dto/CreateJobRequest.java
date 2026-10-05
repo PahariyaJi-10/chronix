@@ -4,6 +4,7 @@ import com.divyansh.chronix.entity.JobPriority;
 import com.divyansh.chronix.entity.JobType;
 import com.divyansh.chronix.entity.ScheduleType;
 import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -35,6 +36,13 @@ public class CreateJobRequest {
     private String cronExpression;
 
     private String tags;
+
+    // Rate limiting
+    @Min(value = 1, message = "Rate limit must be at least 1")
+    private Integer rateLimit;
+
+    @Min(value = 1, message = "Rate limit window must be at least 1 second")
+    private Integer rateLimitWindowSeconds;
 
     public CreateJobRequest() {
     }
@@ -109,5 +117,21 @@ public class CreateJobRequest {
 
     public void setTags(String tags) {
         this.tags = tags;
+    }
+
+    public Integer getRateLimit() {
+        return rateLimit;
+    }
+
+    public void setRateLimit(Integer rateLimit) {
+        this.rateLimit = rateLimit;
+    }
+
+    public Integer getRateLimitWindowSeconds() {
+        return rateLimitWindowSeconds;
+    }
+
+    public void setRateLimitWindowSeconds(Integer rateLimitWindowSeconds) {
+        this.rateLimitWindowSeconds = rateLimitWindowSeconds;
     }
 }

@@ -47,6 +47,11 @@ public class Job {
     @Column(columnDefinition = "TEXT")
     private String tags;
 
+    // Job rate limiting
+    private Integer rateLimit;
+
+    private Integer rateLimitWindowSeconds;
+
     public Job() {
     }
 
@@ -160,5 +165,23 @@ public class Job {
 
     public void setTags(String tags) {
         this.tags = tags;
+    }
+
+    // Rate limiting getters and setters
+
+    public Integer getRateLimit() {
+        return rateLimit;
+    }
+
+    public void setRateLimit(Integer rateLimit) {
+        this.rateLimit = rateLimit;
+    }
+
+    public Integer getRateLimitWindowSeconds() {
+        return rateLimitWindowSeconds;
+    }
+
+    public void setRateLimitWindowSeconds(Integer rateLimitWindowSeconds) {
+        this.rateLimitWindowSeconds = rateLimitWindowSeconds;
     }
 }

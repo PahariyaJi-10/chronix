@@ -17,6 +17,10 @@ public class JobResponse {
     private String cronExpression;
     private String tags;
 
+    // Rate limiting
+    private Integer rateLimit;
+    private Integer rateLimitWindowSeconds;
+
     public JobResponse() {
     }
 
@@ -29,7 +33,9 @@ public class JobResponse {
             Long dependsOnJobId,
             ScheduleType scheduleType,
             String cronExpression,
-            String tags) {
+            String tags,
+            Integer rateLimit,
+            Integer rateLimitWindowSeconds) {
 
         this.id = id;
         this.name = name;
@@ -40,6 +46,8 @@ public class JobResponse {
         this.scheduleType = scheduleType;
         this.cronExpression = cronExpression;
         this.tags = tags;
+        this.rateLimit = rateLimit;
+        this.rateLimitWindowSeconds = rateLimitWindowSeconds;
     }
 
     public Long getId() {
@@ -76,5 +84,13 @@ public class JobResponse {
 
     public String getTags() {
         return tags;
+    }
+
+    public Integer getRateLimit() {
+        return rateLimit;
+    }
+
+    public Integer getRateLimitWindowSeconds() {
+        return rateLimitWindowSeconds;
     }
 }

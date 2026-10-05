@@ -32,6 +32,7 @@ public class JobService {
         this.jobAuditLogService = jobAuditLogService;
     }
 
+    // Create a new job
     public JobResponse createJob(CreateJobRequest request) {
 
         validateSchedule(
@@ -53,6 +54,13 @@ public class JobService {
         // Set job tags
         job.setTags(request.getTags());
 
+        // Set rate limiting
+        job.setRateLimit(request.getRateLimit());
+        job.setRateLimitWindowSeconds(
+                request.getRateLimitWindowSeconds()
+        );
+
+        // Set dependency
         if (request.getDependsOnJobId() != null) {
 
             Job dependencyJob =
@@ -87,6 +95,7 @@ public class JobService {
         return toResponse(savedJob);
     }
 
+    // Get all jobs with dynamic filtering
     public Page<JobResponse> getAllJobs(
             String search,
             String tag,
@@ -119,6 +128,7 @@ public class JobService {
         return jobs.map(this::toResponse);
     }
 
+    // Get job by ID
     public JobResponse getJobById(Long id) {
 
         Job job = findJob(id);
@@ -126,6 +136,7 @@ public class JobService {
         return toResponse(job);
     }
 
+    // Update job
     public JobResponse updateJob(
             Long id,
             CreateJobRequest request) {
@@ -149,6 +160,13 @@ public class JobService {
         // Update job tags
         job.setTags(request.getTags());
 
+        // Update rate limiting
+        job.setRateLimit(request.getRateLimit());
+        job.setRateLimitWindowSeconds(
+                request.getRateLimitWindowSeconds()
+        );
+
+        // Update dependency
         if (request.getDependsOnJobId() != null) {
 
             if (request.getDependsOnJobId().equals(id)) {
@@ -191,6 +209,7 @@ public class JobService {
         return toResponse(updatedJob);
     }
 
+    // Cancel job
     public JobResponse cancelJob(Long id) {
 
         Job job = findJob(id);
@@ -217,6 +236,7 @@ public class JobService {
         return toResponse(cancelledJob);
     }
 
+    // Pause job
     public JobResponse pauseJob(Long id) {
 
         Job job = findJob(id);
@@ -243,6 +263,7 @@ public class JobService {
         return toResponse(pausedJob);
     }
 
+    // Resume job
     public JobResponse resumeJob(Long id) {
 
         Job job = findJob(id);
@@ -269,6 +290,7 @@ public class JobService {
         return toResponse(resumedJob);
     }
 
+    // Retry failed job
     public JobResponse retryJob(Long id) {
 
         Job job = findJob(id);
@@ -296,6 +318,7 @@ public class JobService {
         return toResponse(retriedJob);
     }
 
+    // Delete job
     public void deleteJob(Long id) {
 
         Job job = findJob(id);
@@ -303,6 +326,7 @@ public class JobService {
         jobRepository.delete(job);
     }
 
+    // Validate scheduling configuration
     private void validateSchedule(
             ScheduleType scheduleType,
             String cronExpression) {
@@ -348,6 +372,7 @@ public class JobService {
         }
     }
 
+    // Check for circular job dependencies
     private boolean createsCircularDependency(
             Job currentJob,
             Job dependencyJob) {
@@ -363,10 +388,12 @@ public class JobService {
             if (currentId != null) {
 
                 if (currentId.equals(currentJob.getId())) {
+
                     return true;
                 }
 
                 if (!visitedJobs.add(currentId)) {
+
                     return true;
                 }
             }
@@ -377,6 +404,7 @@ public class JobService {
         return false;
     }
 
+    // Find job or throw exception
     private Job findJob(Long id) {
 
         return jobRepository.findById(id)
@@ -387,6 +415,7 @@ public class JobService {
                 );
     }
 
+    // Convert Job entity to JobResponse
     private JobResponse toResponse(Job job) {
 
         return new JobResponse(
@@ -400,7 +429,9 @@ public class JobService {
                         : null,
                 job.getScheduleType(),
                 job.getCronExpression(),
-                job.getTags()
+                job.getTags(),
+                job.getRateLimit(),
+                job.getRateLimitWindowSeconds()
         );
     }
 }
