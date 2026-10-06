@@ -28,4 +28,11 @@ public interface JobExecutionRepository
     List<JobExecution> findByFinishedAtBefore(
             LocalDateTime cutoffDate
     );
+
+    // Get executions started after a specific time
+    // Used for job rate-limit enforcement
+    List<JobExecution> findByJobIdAndStartedAtAfter(
+            Long jobId,
+            LocalDateTime startedAt
+    );
 }
