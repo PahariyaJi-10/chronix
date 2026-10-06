@@ -10,6 +10,7 @@ import com.divyansh.chronix.repository.DeadLetterJobRepository;
 import com.divyansh.chronix.repository.JobExecutionRepository;
 import com.divyansh.chronix.repository.JobRepository;
 import com.divyansh.chronix.service.JobAuditLogService;
+import com.divyansh.chronix.service.RateLimitService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.support.CronExpression;
@@ -32,6 +33,7 @@ public class JobExecutor {
     private final JobExecutionRepository jobExecutionRepository;
     private final DeadLetterJobRepository deadLetterJobRepository;
     private final JobAuditLogService jobAuditLogService;
+    private final RateLimitService rateLimitService;
 
     @Value("${chronix.executor.job-timeout-seconds}")
     private long timeoutSeconds;
@@ -43,16 +45,53 @@ public class JobExecutor {
             JobRepository jobRepository,
             JobExecutionRepository jobExecutionRepository,
             DeadLetterJobRepository deadLetterJobRepository,
-            JobAuditLogService jobAuditLogService) {
+            JobAuditLogService jobAuditLogService,
+            RateLimitService rateLimitService) {
 
         this.jobRepository = jobRepository;
         this.jobExecutionRepository = jobExecutionRepository;
         this.deadLetterJobRepository = deadLetterJobRepository;
         this.jobAuditLogService = jobAuditLogService;
+        this.rateLimitService = rateLimitService;
     }
 
     @Async("chronixTaskExecutor")
     public void execute(Job job) {
+
+        /*
+         * Rate-limit check must happen BEFORE creating a JobExecution.
+         *
+         * Example:
+         * rateLimit = 5
+         * rateLimitWindowSeconds = 60
+         *
+         * If 5 executions have already started within the
+         * last 60 seconds, this execution is delayed.
+         */
+        if (rateLimitService.isRateLimitExceeded(job)) {
+
+            long delaySeconds =
+                    job.getRateLimitWindowSeconds() != null
+                            ? job.getRateLimitWindowSeconds()
+                            : 60;
+
+            LocalDateTime nextAttempt =
+                    LocalDateTime.now().plusSeconds(delaySeconds);
+
+            job.setScheduledAt(nextAttempt);
+            job.setStatus(JobStatus.PENDING);
+
+            jobRepository.save(job);
+
+            System.out.println(
+                    "Rate limit reached for Job: "
+                            + job.getName()
+                            + " | Next attempt: "
+                            + nextAttempt
+            );
+
+            return;
+        }
 
         JobExecution execution = new JobExecution();
 
@@ -114,6 +153,7 @@ public class JobExecutor {
 
             /*
              * Wait for the actual job work to finish.
+             *
              * If it exceeds the configured timeout,
              * TimeoutException is thrown.
              */
@@ -253,6 +293,7 @@ public class JobExecutor {
                 deadLetterJob.setAttemptCount(retries);
                 deadLetterJob.setErrorMessage(errorMessage);
                 deadLetterJob.setPayload(job.getPayload());
+
                 deadLetterJob.setFailedAt(
                         LocalDateTime.now()
                 );
