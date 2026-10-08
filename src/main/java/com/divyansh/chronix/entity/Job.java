@@ -52,6 +52,9 @@ public class Job {
 
     private Integer rateLimitWindowSeconds;
 
+    // Job concurrency control
+    private Integer maxConcurrentExecutions;
+
     public Job() {
     }
 
@@ -183,5 +186,15 @@ public class Job {
 
     public void setRateLimitWindowSeconds(Integer rateLimitWindowSeconds) {
         this.rateLimitWindowSeconds = rateLimitWindowSeconds;
+    }
+
+    // Concurrency control getters and setters
+
+    public Integer getMaxConcurrentExecutions() {
+        return maxConcurrentExecutions;
+    }
+
+    public void setMaxConcurrentExecutions(Integer maxConcurrentExecutions) {
+        this.maxConcurrentExecutions = maxConcurrentExecutions;
     }
 }
