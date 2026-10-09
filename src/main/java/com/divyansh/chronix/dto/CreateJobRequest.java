@@ -44,6 +44,13 @@ public class CreateJobRequest {
     @Min(value = 1, message = "Rate limit window must be at least 1 second")
     private Integer rateLimitWindowSeconds;
 
+    // Concurrency control
+    @Min(
+        value = 1,
+        message = "Maximum concurrent executions must be at least 1"
+    )
+    private Integer maxConcurrentExecutions;
+
     public CreateJobRequest() {
     }
 
@@ -119,6 +126,8 @@ public class CreateJobRequest {
         this.tags = tags;
     }
 
+    // Rate limiting getters and setters
+
     public Integer getRateLimit() {
         return rateLimit;
     }
@@ -133,5 +142,15 @@ public class CreateJobRequest {
 
     public void setRateLimitWindowSeconds(Integer rateLimitWindowSeconds) {
         this.rateLimitWindowSeconds = rateLimitWindowSeconds;
+    }
+
+    // Concurrency control getters and setters
+
+    public Integer getMaxConcurrentExecutions() {
+        return maxConcurrentExecutions;
+    }
+
+    public void setMaxConcurrentExecutions(Integer maxConcurrentExecutions) {
+        this.maxConcurrentExecutions = maxConcurrentExecutions;
     }
 }
