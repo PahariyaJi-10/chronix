@@ -21,6 +21,9 @@ public class JobResponse {
     private Integer rateLimit;
     private Integer rateLimitWindowSeconds;
 
+    // Concurrency control
+    private Integer maxConcurrentExecutions;
+
     public JobResponse() {
     }
 
@@ -35,7 +38,8 @@ public class JobResponse {
             String cronExpression,
             String tags,
             Integer rateLimit,
-            Integer rateLimitWindowSeconds) {
+            Integer rateLimitWindowSeconds,
+            Integer maxConcurrentExecutions) {
 
         this.id = id;
         this.name = name;
@@ -48,6 +52,7 @@ public class JobResponse {
         this.tags = tags;
         this.rateLimit = rateLimit;
         this.rateLimitWindowSeconds = rateLimitWindowSeconds;
+        this.maxConcurrentExecutions = maxConcurrentExecutions;
     }
 
     public Long getId() {
@@ -86,11 +91,19 @@ public class JobResponse {
         return tags;
     }
 
+    // Rate limiting getters
+
     public Integer getRateLimit() {
         return rateLimit;
     }
 
     public Integer getRateLimitWindowSeconds() {
         return rateLimitWindowSeconds;
+    }
+
+    // Concurrency control getter
+
+    public Integer getMaxConcurrentExecutions() {
+        return maxConcurrentExecutions;
     }
 }

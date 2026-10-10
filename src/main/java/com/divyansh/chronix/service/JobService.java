@@ -60,16 +60,18 @@ public class JobService {
                 request.getRateLimitWindowSeconds()
         );
 
+        // Set concurrency control
+        job.setMaxConcurrentExecutions(
+                request.getMaxConcurrentExecutions()
+        );
+
         // Set dependency
         if (request.getDependsOnJobId() != null) {
 
             Job dependencyJob =
                     findJob(request.getDependsOnJobId());
 
-            if (createsCircularDependency(
-                    job,
-                    dependencyJob)) {
-
+            if (createsCircularDependency(job, dependencyJob)) {
                 throw new RuntimeException(
                         "Circular job dependency detected"
                 );
@@ -130,10 +132,7 @@ public class JobService {
 
     // Get job by ID
     public JobResponse getJobById(Long id) {
-
-        Job job = findJob(id);
-
-        return toResponse(job);
+        return toResponse(findJob(id));
     }
 
     // Update job
@@ -166,11 +165,15 @@ public class JobService {
                 request.getRateLimitWindowSeconds()
         );
 
+        // Update concurrency control
+        job.setMaxConcurrentExecutions(
+                request.getMaxConcurrentExecutions()
+        );
+
         // Update dependency
         if (request.getDependsOnJobId() != null) {
 
             if (request.getDependsOnJobId().equals(id)) {
-
                 throw new RuntimeException(
                         "A job cannot depend on itself"
                 );
@@ -179,10 +182,7 @@ public class JobService {
             Job dependencyJob =
                     findJob(request.getDependsOnJobId());
 
-            if (createsCircularDependency(
-                    job,
-                    dependencyJob)) {
-
+            if (createsCircularDependency(job, dependencyJob)) {
                 throw new RuntimeException(
                         "Circular job dependency detected"
                 );
@@ -191,14 +191,12 @@ public class JobService {
             job.setDependsOn(dependencyJob);
 
         } else {
-
             job.setDependsOn(null);
         }
 
         job.setUpdatedAt(LocalDateTime.now());
 
-        Job updatedJob =
-                jobRepository.save(job);
+        Job updatedJob = jobRepository.save(job);
 
         jobAuditLogService.log(
                 updatedJob,
@@ -215,7 +213,6 @@ public class JobService {
         Job job = findJob(id);
 
         if (job.getStatus() != JobStatus.PENDING) {
-
             throw new RuntimeException(
                     "Only PENDING jobs can be cancelled"
             );
@@ -224,8 +221,7 @@ public class JobService {
         job.setStatus(JobStatus.CANCELLED);
         job.setUpdatedAt(LocalDateTime.now());
 
-        Job cancelledJob =
-                jobRepository.save(job);
+        Job cancelledJob = jobRepository.save(job);
 
         jobAuditLogService.log(
                 cancelledJob,
@@ -242,7 +238,6 @@ public class JobService {
         Job job = findJob(id);
 
         if (job.getStatus() != JobStatus.PENDING) {
-
             throw new RuntimeException(
                     "Only PENDING jobs can be paused"
             );
@@ -251,8 +246,7 @@ public class JobService {
         job.setStatus(JobStatus.PAUSED);
         job.setUpdatedAt(LocalDateTime.now());
 
-        Job pausedJob =
-                jobRepository.save(job);
+        Job pausedJob = jobRepository.save(job);
 
         jobAuditLogService.log(
                 pausedJob,
@@ -269,7 +263,6 @@ public class JobService {
         Job job = findJob(id);
 
         if (job.getStatus() != JobStatus.PAUSED) {
-
             throw new RuntimeException(
                     "Only PAUSED jobs can be resumed"
             );
@@ -278,8 +271,7 @@ public class JobService {
         job.setStatus(JobStatus.PENDING);
         job.setUpdatedAt(LocalDateTime.now());
 
-        Job resumedJob =
-                jobRepository.save(job);
+        Job resumedJob = jobRepository.save(job);
 
         jobAuditLogService.log(
                 resumedJob,
@@ -296,7 +288,6 @@ public class JobService {
         Job job = findJob(id);
 
         if (job.getStatus() != JobStatus.FAILED) {
-
             throw new RuntimeException(
                     "Only FAILED jobs can be retried"
             );
@@ -306,8 +297,7 @@ public class JobService {
         job.setRetryCount(0);
         job.setUpdatedAt(LocalDateTime.now());
 
-        Job retriedJob =
-                jobRepository.save(job);
+        Job retriedJob = jobRepository.save(job);
 
         jobAuditLogService.log(
                 retriedJob,
@@ -320,9 +310,7 @@ public class JobService {
 
     // Delete job
     public void deleteJob(Long id) {
-
         Job job = findJob(id);
-
         jobRepository.delete(job);
     }
 
@@ -332,7 +320,6 @@ public class JobService {
             String cronExpression) {
 
         if (scheduleType == null) {
-
             throw new RuntimeException(
                     "Schedule type is required"
             );
@@ -342,22 +329,18 @@ public class JobService {
 
             if (cronExpression == null
                     || cronExpression.isBlank()) {
-
                 throw new RuntimeException(
                         "Cron expression is required for CRON schedule"
                 );
             }
 
             try {
-
                 org.springframework.scheduling.support.CronExpression
                         .parse(cronExpression);
 
             } catch (IllegalArgumentException e) {
-
                 throw new RuntimeException(
-                        "Invalid cron expression: "
-                                + cronExpression
+                        "Invalid cron expression: " + cronExpression
                 );
             }
         }
@@ -365,7 +348,6 @@ public class JobService {
         if (scheduleType != ScheduleType.CRON
                 && cronExpression != null
                 && !cronExpression.isBlank()) {
-
             throw new RuntimeException(
                     "Cron expression is only allowed for CRON schedule"
             );
@@ -378,7 +360,6 @@ public class JobService {
             Job dependencyJob) {
 
         Set<Long> visitedJobs = new HashSet<>();
-
         Job current = dependencyJob;
 
         while (current != null) {
@@ -388,12 +369,10 @@ public class JobService {
             if (currentId != null) {
 
                 if (currentId.equals(currentJob.getId())) {
-
                     return true;
                 }
 
                 if (!visitedJobs.add(currentId)) {
-
                     return true;
                 }
             }
@@ -431,7 +410,8 @@ public class JobService {
                 job.getCronExpression(),
                 job.getTags(),
                 job.getRateLimit(),
-                job.getRateLimitWindowSeconds()
+                job.getRateLimitWindowSeconds(),
+                job.getMaxConcurrentExecutions()
         );
-    }
-}
+}}
+
