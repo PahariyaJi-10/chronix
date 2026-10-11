@@ -24,6 +24,13 @@ public interface JobExecutionRepository
     // Get executions by status
     List<JobExecution> findByStatus(JobStatus status);
 
+    // Count executions for a specific job and status
+    // Used for concurrency-limit enforcement
+    long countByJobIdAndStatus(
+            Long jobId,
+            JobStatus status
+    );
+
     // Get executions older than a specific date
     List<JobExecution> findByFinishedAtBefore(
             LocalDateTime cutoffDate

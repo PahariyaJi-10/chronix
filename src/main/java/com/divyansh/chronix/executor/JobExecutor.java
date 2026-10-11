@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 public class JobExecutor {
 
     private static final int MAX_RETRIES = 3;
+    private static final long CONCURRENCY_RETRY_DELAY_SECONDS = 10;
 
     private final JobRepository jobRepository;
     private final JobExecutionRepository jobExecutionRepository;
@@ -58,16 +59,43 @@ public class JobExecutor {
     @Async("chronixTaskExecutor")
     public void execute(Job job) {
 
-        /*
-         * Rate-limit check must happen BEFORE creating a JobExecution.
-         *
-         * Example:
-         * rateLimit = 5
-         * rateLimitWindowSeconds = 60
-         *
-         * If 5 executions have already started within the
-         * last 60 seconds, this execution is delayed.
-         */
+        // Enforce per-job concurrency limit before starting execution.
+        Integer maxConcurrent = job.getMaxConcurrentExecutions();
+
+        if (maxConcurrent != null) {
+
+            long runningExecutions =
+                    jobExecutionRepository.countByJobIdAndStatus(
+                            job.getId(),
+                            JobStatus.RUNNING
+                    );
+
+            if (runningExecutions >= maxConcurrent) {
+
+                LocalDateTime nextAttempt =
+                        LocalDateTime.now().plusSeconds(
+                                CONCURRENCY_RETRY_DELAY_SECONDS
+                        );
+
+                job.setScheduledAt(nextAttempt);
+                job.setStatus(JobStatus.PENDING);
+                job.setUpdatedAt(LocalDateTime.now());
+
+                jobRepository.save(job);
+
+                System.out.println(
+                        "Concurrency limit reached for Job: "
+                                + job.getName()
+                                + " | Running: " + runningExecutions
+                                + " | Maximum: " + maxConcurrent
+                                + " | Next attempt: " + nextAttempt
+                );
+
+                return;
+            }
+        }
+
+        // Rate-limit check must happen before creating a JobExecution.
         if (rateLimitService.isRateLimitExceeded(job)) {
 
             long delaySeconds =
@@ -80,14 +108,14 @@ public class JobExecutor {
 
             job.setScheduledAt(nextAttempt);
             job.setStatus(JobStatus.PENDING);
+            job.setUpdatedAt(LocalDateTime.now());
 
             jobRepository.save(job);
 
             System.out.println(
                     "Rate limit reached for Job: "
                             + job.getName()
-                            + " | Next attempt: "
-                            + nextAttempt
+                            + " | Next attempt: " + nextAttempt
             );
 
             return;
@@ -124,12 +152,7 @@ public class JobExecutor {
 
                 try {
 
-                    /*
-                     * Simulated job processing.
-                     *
-                     * This represents the actual work performed
-                     * by a Chronix job.
-                     */
+                    // Simulated job processing.
                     Thread.sleep(5000);
 
                     if (job.getPayload() != null
@@ -151,12 +174,7 @@ public class JobExecutor {
                 }
             });
 
-            /*
-             * Wait for the actual job work to finish.
-             *
-             * If it exceeds the configured timeout,
-             * TimeoutException is thrown.
-             */
+            // Wait for job work to finish or time out.
             future.get(
                     timeoutSeconds,
                     TimeUnit.SECONDS
@@ -171,8 +189,7 @@ public class JobExecutor {
             );
 
             System.out.println(
-                    "Completed Job: "
-                            + job.getName()
+                    "Completed Job: " + job.getName()
             );
 
             scheduleNextExecution(job);
@@ -228,11 +245,9 @@ public class JobExecutor {
 
         } finally {
 
-            LocalDateTime finishedAt =
-                    LocalDateTime.now();
+            LocalDateTime finishedAt = LocalDateTime.now();
 
             execution.setFinishedAt(finishedAt);
-
             job.setUpdatedAt(finishedAt);
 
             jobRepository.save(job);
@@ -245,8 +260,7 @@ public class JobExecutor {
             JobExecution execution,
             String errorMessage) {
 
-        int retries =
-                job.getRetryCount() + 1;
+        int retries = job.getRetryCount() + 1;
 
         job.setRetryCount(retries);
 
@@ -267,10 +281,8 @@ public class JobExecutor {
             job.setStatus(JobStatus.PENDING);
 
             System.out.println(
-                    "Retry "
-                            + retries
-                            + " scheduled for: "
-                            + job.getName()
+                    "Retry " + retries
+                            + " scheduled for: " + job.getName()
             );
 
         } else {
@@ -278,8 +290,7 @@ public class JobExecutor {
             job.setStatus(JobStatus.FAILED);
 
             System.out.println(
-                    "Job permanently failed: "
-                            + job.getName()
+                    "Job permanently failed: " + job.getName()
             );
 
             if (!deadLetterJobRepository.existsByJobId(
@@ -293,14 +304,9 @@ public class JobExecutor {
                 deadLetterJob.setAttemptCount(retries);
                 deadLetterJob.setErrorMessage(errorMessage);
                 deadLetterJob.setPayload(job.getPayload());
+                deadLetterJob.setFailedAt(LocalDateTime.now());
 
-                deadLetterJob.setFailedAt(
-                        LocalDateTime.now()
-                );
-
-                deadLetterJobRepository.save(
-                        deadLetterJob
-                );
+                deadLetterJobRepository.save(deadLetterJob);
 
                 jobAuditLogService.log(
                         job,
@@ -320,8 +326,7 @@ public class JobExecutor {
 
     private void scheduleNextExecution(Job job) {
 
-        ScheduleType scheduleType =
-                job.getScheduleType();
+        ScheduleType scheduleType = job.getScheduleType();
 
         if (scheduleType == null
                 || scheduleType == ScheduleType.ONE_TIME) {
@@ -341,14 +346,12 @@ public class JobExecutor {
 
                 nextScheduledTime =
                         currentScheduledTime.plusHours(1);
-
                 break;
 
             case DAILY:
 
                 nextScheduledTime =
                         currentScheduledTime.plusDays(1);
-
                 break;
 
             case CRON:
@@ -370,7 +373,6 @@ public class JobExecutor {
                         cron.next(currentScheduledTime);
 
                 if (nextScheduledTime == null) {
-
                     throw new IllegalArgumentException(
                             "Unable to calculate next execution time"
                     );
