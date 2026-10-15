@@ -10,13 +10,16 @@ import com.divyansh.chronix.repository.DeadLetterJobRepository;
 import com.divyansh.chronix.repository.JobExecutionRepository;
 import com.divyansh.chronix.repository.JobRepository;
 import com.divyansh.chronix.service.JobAuditLogService;
+import com.divyansh.chronix.service.JobLockService;
 import com.divyansh.chronix.service.RateLimitService;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.support.CronExpression;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,6 +38,7 @@ public class JobExecutor {
     private final DeadLetterJobRepository deadLetterJobRepository;
     private final JobAuditLogService jobAuditLogService;
     private final RateLimitService rateLimitService;
+    private final JobLockService jobLockService;
 
     @Value("${chronix.executor.job-timeout-seconds}")
     private long timeoutSeconds;
@@ -42,24 +46,30 @@ public class JobExecutor {
     private final ExecutorService jobWorkExecutor =
             Executors.newCachedThreadPool();
 
+    // Unique identity for this Chronix worker instance.
+    private final String workerId =
+            "chronix-worker-" + UUID.randomUUID();
+
     public JobExecutor(
             JobRepository jobRepository,
             JobExecutionRepository jobExecutionRepository,
             DeadLetterJobRepository deadLetterJobRepository,
             JobAuditLogService jobAuditLogService,
-            RateLimitService rateLimitService) {
+            RateLimitService rateLimitService,
+            JobLockService jobLockService) {
 
         this.jobRepository = jobRepository;
         this.jobExecutionRepository = jobExecutionRepository;
         this.deadLetterJobRepository = deadLetterJobRepository;
         this.jobAuditLogService = jobAuditLogService;
         this.rateLimitService = rateLimitService;
+        this.jobLockService = jobLockService;
     }
 
     @Async("chronixTaskExecutor")
     public void execute(Job job) {
 
-        // Enforce per-job concurrency limit before starting execution.
+        // Step 1: Enforce the existing per-job concurrency limit.
         Integer maxConcurrent = job.getMaxConcurrentExecutions();
 
         if (maxConcurrent != null) {
@@ -95,7 +105,7 @@ public class JobExecutor {
             }
         }
 
-        // Rate-limit check must happen before creating a JobExecution.
+        // Step 2: Enforce the existing rate limit.
         if (rateLimitService.isRateLimitExceeded(job)) {
 
             long delaySeconds =
@@ -121,137 +131,218 @@ public class JobExecutor {
             return;
         }
 
-        JobExecution execution = new JobExecution();
+        // Step 3: Acquire a distributed lock before executing.
+        // Every execution attempt gets a unique ownership token.
+        String lockOwner =
+                workerId + ":" + UUID.randomUUID();
 
-        execution.setJob(job);
-        execution.setStatus(JobStatus.RUNNING);
-        execution.setStartedAt(LocalDateTime.now());
-        execution.setAttemptNumber(job.getRetryCount() + 1);
-
-        jobExecutionRepository.save(execution);
-
-        jobAuditLogService.log(
-                job,
-                JobAuditAction.JOB_STARTED,
-                "Job execution started. Attempt: "
-                        + execution.getAttemptNumber()
+        boolean lockAcquired = jobLockService.acquireLock(
+                job.getId(),
+                lockOwner
         );
 
-        System.out.println(
-                "Executing Job: " + job.getName()
-                        + " | Attempt: " + execution.getAttemptNumber()
-                        + " | Schedule: " + job.getScheduleType()
-                        + " | Thread: " + Thread.currentThread().getName()
-        );
+        if (!lockAcquired) {
 
+            LocalDateTime nextAttempt =
+                    LocalDateTime.now().plusSeconds(
+                            CONCURRENCY_RETRY_DELAY_SECONDS
+                    );
+
+            job.setScheduledAt(nextAttempt);
+            job.setStatus(JobStatus.PENDING);
+            job.setUpdatedAt(LocalDateTime.now());
+
+            jobRepository.save(job);
+
+            System.out.println(
+                    "Distributed lock unavailable for Job: "
+                            + job.getName()
+                            + " | Worker: " + workerId
+                            + " | Next attempt: " + nextAttempt
+            );
+
+            return;
+        }
+
+        // Step 4: Execute the job while holding the lock.
+        JobExecution execution = null;
         Future<?> future = null;
 
         try {
 
-            future = jobWorkExecutor.submit(() -> {
+            execution = new JobExecution();
 
-                try {
+            execution.setJob(job);
+            execution.setStatus(JobStatus.RUNNING);
+            execution.setStartedAt(LocalDateTime.now());
+            execution.setAttemptNumber(job.getRetryCount() + 1);
 
-                    // Simulated job processing.
-                    Thread.sleep(5000);
-
-                    if (job.getPayload() != null
-                            && job.getPayload().equalsIgnoreCase("FAIL")) {
-
-                        throw new RuntimeException(
-                                "Simulated job failure"
-                        );
-                    }
-
-                } catch (InterruptedException e) {
-
-                    Thread.currentThread().interrupt();
-
-                    throw new RuntimeException(
-                            "Job execution interrupted",
-                            e
-                    );
-                }
-            });
-
-            // Wait for job work to finish or time out.
-            future.get(
-                    timeoutSeconds,
-                    TimeUnit.SECONDS
-            );
-
-            execution.setStatus(JobStatus.COMPLETED);
+            jobExecutionRepository.save(execution);
 
             jobAuditLogService.log(
                     job,
-                    JobAuditAction.JOB_COMPLETED,
-                    "Job execution completed successfully"
+                    JobAuditAction.JOB_STARTED,
+                    "Job execution started. Attempt: "
+                            + execution.getAttemptNumber()
+                            + " | Worker: " + workerId
             );
 
             System.out.println(
-                    "Completed Job: " + job.getName()
+                    "Executing Job: " + job.getName()
+                            + " | Attempt: "
+                            + execution.getAttemptNumber()
+                            + " | Schedule: " + job.getScheduleType()
+                            + " | Worker: " + workerId
+                            + " | Thread: "
+                            + Thread.currentThread().getName()
             );
 
-            scheduleNextExecution(job);
+            try {
 
-        } catch (TimeoutException e) {
+                // Submit the actual job work.
+                future = jobWorkExecutor.submit(() -> {
 
-            if (future != null) {
-                future.cancel(true);
+                    try {
+
+                        // Simulated job processing.
+                        Thread.sleep(5000);
+
+                        if (job.getPayload() != null
+                                && job.getPayload()
+                                .equalsIgnoreCase("FAIL")) {
+
+                            throw new RuntimeException(
+                                    "Simulated job failure"
+                            );
+                        }
+
+                    } catch (InterruptedException e) {
+
+                        Thread.currentThread().interrupt();
+
+                        throw new RuntimeException(
+                                "Job execution interrupted",
+                                e
+                        );
+                    }
+                });
+
+                // Wait for the job to complete or time out.
+                future.get(
+                        timeoutSeconds,
+                        TimeUnit.SECONDS
+                );
+
+                execution.setStatus(JobStatus.COMPLETED);
+
+                jobAuditLogService.log(
+                        job,
+                        JobAuditAction.JOB_COMPLETED,
+                        "Job execution completed successfully"
+                );
+
+                System.out.println(
+                        "Completed Job: " + job.getName()
+                );
+
+                scheduleNextExecution(job);
+
+            } catch (TimeoutException e) {
+
+                if (future != null) {
+                    future.cancel(true);
+                }
+
+                handleFailure(
+                        job,
+                        execution,
+                        "Job execution timed out after "
+                                + timeoutSeconds
+                                + " seconds"
+                );
+
+            } catch (ExecutionException e) {
+
+                Throwable cause = e.getCause();
+
+                String errorMessage =
+                        cause != null && cause.getMessage() != null
+                                ? cause.getMessage()
+                                : "Job execution failed";
+
+                handleFailure(
+                        job,
+                        execution,
+                        errorMessage
+                );
+
+            } catch (InterruptedException e) {
+
+                if (future != null) {
+                    future.cancel(true);
+                }
+
+                Thread.currentThread().interrupt();
+
+                handleFailure(
+                        job,
+                        execution,
+                        "Job executor thread was interrupted"
+                );
+
+            } catch (Exception e) {
+
+                handleFailure(
+                        job,
+                        execution,
+                        e.getMessage() != null
+                                ? e.getMessage()
+                                : "Unexpected job execution error"
+                );
             }
-
-            handleFailure(
-                    job,
-                    execution,
-                    "Job execution timed out after "
-                            + timeoutSeconds
-                            + " seconds"
-            );
-
-        } catch (ExecutionException e) {
-
-            Throwable cause = e.getCause();
-
-            String errorMessage =
-                    cause != null && cause.getMessage() != null
-                            ? cause.getMessage()
-                            : "Job execution failed";
-
-            handleFailure(
-                    job,
-                    execution,
-                    errorMessage
-            );
-
-        } catch (InterruptedException e) {
-
-            Thread.currentThread().interrupt();
-
-            handleFailure(
-                    job,
-                    execution,
-                    "Job executor thread was interrupted"
-            );
-
-        } catch (Exception e) {
-
-            handleFailure(
-                    job,
-                    execution,
-                    e.getMessage() != null
-                            ? e.getMessage()
-                            : "Unexpected job execution error"
-            );
 
         } finally {
 
-            LocalDateTime finishedAt = LocalDateTime.now();
+            // Step 5: Persist execution results and always attempt
+            // lock release, even if persistence throws an exception.
+            try {
 
-            execution.setFinishedAt(finishedAt);
-            job.setUpdatedAt(finishedAt);
+                if (execution != null) {
 
-            jobRepository.save(job);
-            jobExecutionRepository.save(execution);
+                    LocalDateTime finishedAt =
+                            LocalDateTime.now();
+
+                    execution.setFinishedAt(finishedAt);
+                    job.setUpdatedAt(finishedAt);
+
+                    jobRepository.save(job);
+                    jobExecutionRepository.save(execution);
+                }
+
+            } finally {
+
+                boolean released = jobLockService.releaseLock(
+                        job.getId(),
+                        lockOwner
+                );
+
+                if (released) {
+
+                    System.out.println(
+                            "Distributed lock released for Job: "
+                                    + job.getName()
+                                    + " | Worker: " + workerId
+                    );
+
+                } else {
+
+                    System.err.println(
+                            "Warning: Lock not released by owner "
+                                    + lockOwner
+                                    + " for Job ID: " + job.getId()
+                    );
+                }
+            }
         }
     }
 
