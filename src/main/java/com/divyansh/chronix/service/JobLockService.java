@@ -14,6 +14,7 @@ public class JobLockService {
     @Value("${chronix.job-lock.duration-seconds:60}")
     private long lockDurationSeconds;
 
+    
     public JobLockService(JobLockRepository jobLockRepository) {
         this.jobLockRepository = jobLockRepository;
     }
