@@ -33,7 +33,6 @@ class JobLockRepositoryIntegrationTest {
         try {
             assertEquals(1, jobLockRepository.acquireLock(
                     jobId, workerA, now, now.plusMinutes(1)));
-
             assertEquals(0, jobLockRepository.acquireLock(
                     jobId, workerB, now, now.plusMinutes(1)));
         } finally {
@@ -52,10 +51,8 @@ class JobLockRepositoryIntegrationTest {
         try {
             assertEquals(1, jobLockRepository.acquireLock(
                     jobId, owner, now, now.plusMinutes(1)));
-
             assertEquals(0, jobLockRepository.releaseLock(jobId, otherWorker));
             assertEquals(1, jobLockRepository.releaseLock(jobId, owner));
-
             assertEquals(1, jobLockRepository.acquireLock(
                     jobId, otherWorker, now, now.plusMinutes(1)));
         } finally {
@@ -74,7 +71,6 @@ class JobLockRepositoryIntegrationTest {
         try {
             assertEquals(1, jobLockRepository.acquireLock(
                     jobId, workerA, now, now.minusSeconds(1)));
-
             assertEquals(1, jobLockRepository.acquireLock(
                     jobId, workerB, now, now.plusMinutes(1)));
         } finally {
@@ -123,6 +119,20 @@ class JobLockRepositoryIntegrationTest {
 
             assertEquals(1, acquiredA + acquiredB,
                     "Exactly one worker should acquire the lock");
+
+            String winner = acquiredA == 1 ? workerA : workerB;
+            String loser = acquiredA == 1 ? workerB : workerA;
+
+            assertEquals(0, jobLockRepository.releaseLock(jobId, loser),
+                    "The losing worker must not release the winner's lock");
+
+            assertEquals(1, jobLockRepository.releaseLock(jobId, winner),
+                    "The winning worker should be able to release its lock");
+
+            LocalDateTime retryTime = LocalDateTime.now();
+            assertEquals(1, jobLockRepository.acquireLock(
+                    jobId, loser, retryTime, retryTime.plusMinutes(1)),
+                    "The losing worker should acquire the lock after release");
         } finally {
             start.countDown();
             executor.shutdownNow();
