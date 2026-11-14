@@ -111,8 +111,7 @@ Make sure you have installed:
 
 1. Clone the repository
 
-git clone YOUR_REPOSITORY_URL
-cd Chronix
+git clone
 
 2. Create PostgreSQL Database
 
