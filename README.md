@@ -111,7 +111,7 @@ Make sure you have installed:
 
 1. Clone the repository
 
-git clone
+
 
 2. Create PostgreSQL Database
 
