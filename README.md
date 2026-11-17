@@ -171,7 +171,7 @@ The project has progressed beyond basic CRUD operations and includes distributed
 
 Further development can focus on improving scalability, observability, performance, and production readiness.
 
-👨‍💻 Author
+👨‍💻 By :-
 
 Divyansh Pahariya
 
